@@ -27,7 +27,17 @@ bitmeds is the family's health quest source. Doses taken pay XP into 128bitlife,
 - **Dose types:** pills only, or also injections, creams, inhalers? Weekly/monthly schedules in v1?
 - **Platform:** iOS/Android/both, native build or wrapped web app?
 
+## Dose timers (`app/`)
+
+A working, local-first dose timer app at `/app/` (https://hootywhooo86.github.io/bitmeds/app/):
+
+- Pick a med type (pill/capsule, tablet, liquid, injection, inhaler, drops, cream, patch, nasal spray, other) — each has a pixel sprite and its own standard units (mg, mcg, g, ml, tsp, units, puffs, drops, sprays…).
+- Set amount + unit, optional strength and who it's for, how far between doses (1h–weekly presets or custom h/m), and a description of what you're giving.
+- Each med becomes a countdown widget: time left, when it's due, a segmented progress bar, yellow when close, flashing red when overdue, and a **GAVE IT · RESET** button that logs the dose and restarts the timer (with undo).
+- Chiptune beep + optional browser notification when a dose comes due (while the page is open). Data stays in the browser's localStorage. Installable to the home screen (manifest + icons).
+
 ## Status
 
 - Landing page + mock: live (coming-soon).
-- Real app build: not started. Formspree ID still needed in the waitlist form (`YOUR_FORM_ID` placeholder with a local-confirm fallback).
+- Dose timers: working v1 in `app/` (local-only, no account sync or push yet).
+- Full app build (accounts, family feed events, push):  not started. Formspree ID still needed in the waitlist form (`YOUR_FORM_ID` placeholder with a local-confirm fallback).

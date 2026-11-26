@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>bitmeds — Dose Timers</title>
+<meta name="description" content="bitmeds dose timers: add a med, pick its type, dose and how long between doses, and get a pixel countdown widget with a reset button.">
+<meta name="theme-color" content="#0b0b16">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="bitmeds">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0b16; --panel:#141428; --panel-2:#1f1f3a; --line:#2a2a4a;
+    --pill:#34d399; --pill-deep:#047857;
+    --yellow:#facc15; --yellow-deep:#a16207;
+    --orange:#ff9f1c; --purple:#a78bfa; --blue:#60a5fa;
+    --red:#ff5d5d; --red-deep:#991b1b;
+    --ink:#f4f1ff; --muted:#9a97b8;
+    --px:'Press Start 2P',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg)}
+  body{color:var(--ink);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:radial-gradient(rgba(52,211,153,.08) 1px, transparent 1px);background-size:22px 22px}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;background:repeating-linear-gradient(to bottom, rgba(0,0,0,.12) 0 2px, transparent 2px 4px)}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 16px;position:relative;z-index:1}
+  button{font:inherit;color:inherit;cursor:pointer}
+  svg.sprite{image-rendering:pixelated;shape-rendering:crispEdges;display:block}
+
+  /* top bar */
+  nav{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 0 8px;padding-top:max(20px, env(safe-area-inset-top))}
+  .logo{display:flex;align-items:center;gap:12px;font-family:var(--px);font-size:14px;color:var(--ink);text-decoration:none}
+  .logo-mark{width:34px;height:34px;background:var(--panel-2);display:grid;place-items:center;box-shadow:0 4px 0 #000, 4px 0 0 var(--line), -4px 0 0 var(--line), 0 -4px 0 var(--line)}
+  .navbtns{display:flex;gap:8px}
+  .chip{font-family:var(--px);font-size:9px;padding:10px 10px;background:var(--panel-2);border:none;color:var(--ink);box-shadow:0 4px 0 #000;letter-spacing:1px}
+  .chip.on{background:var(--pill);color:var(--bg);box-shadow:0 4px 0 var(--pill-deep)}
+  .chip:active{transform:translateY(3px);box-shadow:0 1px 0 #000}
+
+  /* HUD */
+  .hud{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 22px}
+  .hud .stat{background:var(--panel);border:3px solid var(--line);padding:10px 12px;font-family:var(--px);font-size:9px;color:var(--muted);line-height:1.7;flex:1;min-width:130px}
+  .hud .stat b{display:block;font-size:14px;color:var(--pill);margin-top:4px}
+  .hud .stat.due b{color:var(--red)}
+  .hud .stat.next b{color:var(--yellow)}
+
+  h2.sec{font-family:var(--px);font-size:11px;color:var(--pill);margin:0 0 14px;letter-spacing:1px}
+
+  /* timer widgets */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:20px;margin-bottom:34px}
+  .card{background:var(--panel);border:3px solid var(--line);box-shadow:6px 6px 0 #000;padding:16px;position:relative;display:flex;flex-direction:column;gap:12px}
+  .card .top{display:flex;gap:12px;align-items:flex-start}
+  .card .icon{width:56px;height:56px;flex-shrink:0;background:var(--bg);border:3px solid var(--line);display:grid;place-items:center}
+  .card .who{flex:1;min-width:0}
+  .card .name{font-weight:800;font-size:17px;line-height:1.25;word-break:break-word}
+  .card .tag{font-family:var(--px);font-size:8px;color:var(--purple);margin-top:6px;letter-spacing:1px;line-height:1.6}
+  .card .dose{font-size:14px;color:var(--ink);margin-top:6px}
+  .card .dose b{color:var(--yellow)}
+  .card .desc{font-size:13px;color:var(--muted);line-height:1.55;background:var(--bg);border-left:4px solid var(--purple);padding:8px 10px;word-break:break-word}
+  .card .more{background:none;border:none;color:var(--muted);font-family:var(--px);font-size:12px;padding:4px 2px;line-height:1}
+  .menu{position:absolute;right:12px;top:44px;background:var(--panel-2);border:3px solid var(--line);box-shadow:4px 4px 0 #000;z-index:5;display:none;min-width:150px}
+  .menu.open{display:block}
+  .menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:11px 12px;font-family:var(--px);font-size:9px;color:var(--ink)}
+  .menu button:hover{background:var(--line)}
+  .menu button.danger{color:var(--red)}
+
+  .clock{background:#07070f;border:3px solid var(--line);padding:14px 10px 12px;text-align:center}
+  .clock .lbl{font-family:var(--px);font-size:8px;color:var(--muted);letter-spacing:1px}
+  .clock .t{font-family:var(--px);font-size:clamp(22px,7vw,28px);color:var(--pill);margin:10px 0 8px;text-shadow:0 0 10px rgba(52,211,153,.45);letter-spacing:1px}
+  .clock .at{font-size:12px;color:var(--muted)}
+  .segs{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin-top:10px}
+  .segs i{height:10px;background:#1a1a33}
+  .segs i.f{background:var(--pill)}
+
+  .card.soon .clock .t{color:var(--yellow);text-shadow:0 0 10px rgba(250,204,21,.45)}
+  .card.soon .segs i.f{background:var(--yellow)}
+  .card.due{border-color:var(--red)}
+  .card.due .clock{border-color:var(--red)}
+  .card.due .clock .t{color:var(--red);text-shadow:0 0 12px rgba(255,93,93,.6);animation:blink 1s steps(2,start) infinite}
+  .card.due .segs i.f{background:var(--red)}
+  @keyframes blink{to{visibility:hidden}}
+
+  .reset{font-family:var(--px);font-size:11px;padding:15px 12px;background:var(--pill);color:var(--bg);border:none;box-shadow:0 5px 0 var(--pill-deep);letter-spacing:1px;width:100%}
+  .reset:active{transform:translateY(4px);box-shadow:0 1px 0 var(--pill-deep)}
+  .card.due .reset{background:var(--red);color:#fff;box-shadow:0 5px 0 var(--red-deep)}
+  .last{font-size:12px;color:var(--muted);text-align:center}
+
+  .empty{background:var(--panel);border:3px dashed var(--line);padding:34px 20px;text-align:center;grid-column:1/-1}
+  .empty p{font-family:var(--px);font-size:10px;line-height:2;color:var(--muted);margin:14px 0 16px}
+  .empty .sprite{margin:0 auto}
+
+  /* add form */
+  .addmed{background:var(--panel);border:3px solid var(--line);box-shadow:6px 6px 0 #000;padding:20px;margin-bottom:40px}
+  .step{font-family:var(--px);font-size:9px;color:var(--yellow);margin:18px 0 10px;letter-spacing:1px;line-height:1.6}
+  .step:first-of-type{margin-top:4px}
+  .types{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+  .type{background:var(--bg);border:3px solid var(--line);padding:10px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--px);font-size:7px;letter-spacing:.5px;color:var(--muted);line-height:1.4;text-align:center}
+  .type.sel{border-color:var(--pill);color:var(--ink);background:#0f2a22;box-shadow:inset 0 0 0 2px var(--pill-deep)}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:140px}
+  .field.s{flex:0 1 120px;min-width:100px}
+  .field label{font-size:12px;color:var(--muted);font-weight:600}
+  input,select,textarea{padding:12px;background:var(--bg);border:3px solid var(--line);color:var(--ink);font-size:16px;font-family:'Inter',system-ui,sans-serif;width:100%;border-radius:0;appearance:none;-webkit-appearance:none}
+  select{background-image:linear-gradient(45deg,transparent 50%,var(--pill) 50%),linear-gradient(135deg,var(--pill) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 12px) 50%;background-size:6px 6px;background-repeat:no-repeat;padding-right:32px}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pill)}
+  textarea{resize:vertical;min-height:70px;line-height:1.5}
+  .presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .presets button{font-family:var(--px);font-size:9px;padding:10px 10px;background:var(--bg);border:3px solid var(--line);color:var(--muted)}
+  .presets button.sel{border-color:var(--pill);color:var(--ink);background:#0f2a22}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
+  .hint b{color:var(--pill)}
+  .actions{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+  .btn{font-family:var(--px);font-size:10px;padding:14px 18px;background:var(--pill);color:var(--bg);border:none;box-shadow:0 5px 0 var(--pill-deep);letter-spacing:1px}
+  .btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--pill-deep)}
+  .btn.ghost{background:var(--panel-2);color:var(--ink);box-shadow:0 5px 0 #000}
+  .err{color:var(--red);font-size:13px;margin-top:12px;min-height:1em}
+
+  /* toast */
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(140%);background:var(--panel-2);border:3px solid var(--pill);box-shadow:4px 4px 0 #000;padding:12px 14px;display:flex;gap:14px;align-items:center;z-index:60;transition:transform .15s steps(3);max-width:calc(100% - 32px);font-size:14px}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .toast button{font-family:var(--px);font-size:9px;background:var(--yellow);color:var(--bg);border:none;padding:9px 10px;box-shadow:0 3px 0 var(--yellow-deep);flex-shrink:0}
+
+  footer{color:var(--muted);font-size:12px;text-align:center;padding:0 0 40px;line-height:1.7}
+  footer a{color:var(--pill)}
+  @media (max-width:420px){
+    .logo{font-size:12px}
+    .chip{font-size:8px;padding:9px 8px}
+    .hud .stat{min-width:calc(50% - 5px)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="logo" href="../"><span class="logo-mark" id="logoMark"></span> bitmeds</a>
+    <div class="navbtns">
+      <button class="chip" id="soundBtn" title="Chiptune beep when a dose is due">♪ SOUND</button>
+      <button class="chip" id="alertBtn" title="Phone/desktop notification when a dose is due">🔔 ALERTS</button>
+    </div>
+  </nav>
+
+  <div class="hud">
+    <div class="stat">MEDS<b id="hudMeds">0</b></div>
+    <div class="stat due">DUE NOW<b id="hudDue">0</b></div>
+    <div class="stat next">NEXT UP<b id="hudNext">—</b></div>
+    <div class="stat">GIVEN TODAY<b id="hudToday">0</b></div>
+  </div>
+
+  <h2 class="sec">▸ DOSE TIMERS</h2>
+  <div class="grid" id="grid"></div>
+
+  <section class="addmed" id="addmed">
+    <h2 class="sec" id="formTitle">▸ ADD A MED</h2>
+    <form id="form" autocomplete="off">
+      <div class="step">1 · WHAT TYPE?</div>
+      <div class="types" id="types"></div>
+
+      <div class="step">2 · WHAT IS IT?</div>
+      <div class="row">
+        <div class="field"><label for="fName">Med name</label><input id="fName" placeholder="e.g. Amoxicillin" maxlength="60" required></div>
+        <div class="field"><label for="fFor">Who it's for <span style="font-weight:400">(optional)</span></label><input id="fFor" placeholder="e.g. Harlow" maxlength="30"></div>
+      </div>
+
+      <div class="step">3 · HOW MUCH?</div>
+      <div class="row">
+        <div class="field s"><label for="fAmt">Amount</label><input id="fAmt" type="number" inputmode="decimal" min="0" step="any" value="1" required></div>
+        <div class="field"><label for="fUnit">Unit</label><select id="fUnit"></select></div>
+        <div class="field"><label for="fStr">Strength <span style="font-weight:400">(optional)</span></label><input id="fStr" placeholder="e.g. 500 mg" maxlength="30"></div>
+      </div>
+
+      <div class="step">4 · HOW FAR BETWEEN DOSES?</div>
+      <div class="presets" id="presets"></div>
+      <div class="row">
+        <div class="field s"><label for="fH">Hours</label><input id="fH" type="number" inputmode="numeric" min="0" max="999" value="8"></div>
+        <div class="field s"><label for="fM">Minutes</label><input id="fM" type="number" inputmode="numeric" min="0" max="59" value="0"></div>
+      </div>
+
+      <div class="step">5 · WHEN DOES THE TIMER START?</div>
+      <div class="row">
+        <div class="field"><label for="fStart">Start</label>
+          <select id="fStart">
+            <option value="now">Just gave a dose — count down from now</option>
+            <option value="at">Next dose is due at a set time</option>
+            <option value="due">Due right now — I haven't given it yet</option>
+          </select>
+        </div>
+        <div class="field s" id="atWrap" style="display:none"><label for="fAt">Due at</label><input id="fAt" type="time"></div>
+      </div>
+
+      <div class="step">6 · DESCRIPTION — WHAT YOU'RE GIVING</div>
+      <textarea id="fDesc" maxlength="240" placeholder="e.g. Pink liquid, shake well. Give with food. Finish the whole bottle."></textarea>
+
+      <div class="err" id="err"></div>
+      <div class="actions">
+        <button class="btn" type="submit" id="saveBtn">+ ADD TIMER</button>
+        <button class="btn ghost" type="button" id="cancelBtn" style="display:none">CANCEL</button>
+      </div>
+    </form>
+  </section>
+
+  <footer>
+    Saved on this device only. Alerts and sounds work while bitmeds is open —<br>add it to your home screen to keep it one tap away.<br>
+    bitmeds is a reminder, not medical advice — follow your doctor or pharmacist's directions.<br>
+    <a href="../">← back to bitmeds</a>
+  </footer>
+</div>
+
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">UNDO</button></div>
+
+<script>
+(() => {
+  // ---------- pixel sprites (16x16, one char per pixel) ----------
+  const PAL = { o:'#0b0b16', W:'#f4f1ff', G:'#34d399', g:'#047857', Y:'#facc15', y:'#a16207',
+                R:'#ff5d5d', B:'#60a5fa', b:'#1d4ed8', P:'#a78bfa', p:'#6d28d9', O:'#ff9f1c', s:'#9a97b8', k:'#c9c6e0' };
+  const SPR = {
+    pill: [
+      "................","................","................","................",
+      "...oooooooooo...","..oGGGGGWWWWWo..",".oGGGGGGWWWWWWo.",".oGgGGGGWWWWkWo.",
+      ".oGgGGGGWWWWkWo.",".oGGGGGGWWWWWWo.","..oGGGGGWWWWWo..","...oooooooooo...",
+      "................","................","................","................"],
+    tablet: [
+      "................","................",".....oooooo.....","...ooWWWWWWoo...",
+      "..oWWWWWWWWWWo..","..oWWWWWWWWWWo..",".oWWWWWWWWWWWWo.",".okkkkkkkkkkkko.",
+      ".oWWWWWWWWWWWWo.","..oWWWWWWWWWWo..","..oWWWWWWWWWWo..","...ooWWWWWWoo...",
+      ".....oooooo.....","................","................","................"],
+    liquid: [
+      "................","......oooo......","......oRRo......","......oRRo......",
+      ".....oooooo.....","....oWWWWWWo....","....oWkWWWWo....","....oPPPPPPo....",
+      "....oPpPPPPo....","....oPpPPPPo....","....oPPPPPPo....","....oPPPPPPo....",
+      "....oPPPPPPo....",".....oooooo.....","................","................"],
+    injection: [
+      "................","................","................","................",
+      "................","o...........o...","o..oooooooooo...","ooooBBBBBBkWWosss",
+      "o..oBbBBBBkWWo..","o..oooooooooo...","o...........o...","................",
+      "................","................","................","................"],
+    inhaler: [
+      "................","....oooo........","....oYYo........","....oYyo........",
+      "....oYyo........","....oYyo........","....oYyo........","....oYyooooooo..",
+      "....oYYYYYYYYYo.","....oYYYYYYYYYo.","....oYYYYYooooo.","....oooooo......",
+      "................","................","................","................"],
+    drops: [
+      "................","........o.......",".......oBo......",".......oBo......",
+      "......oBBBo.....",".....oBBBBBo....","....oBBBBBBBo...","....oBkBBBBBo...",
+      "...oBBkBBBBBBo..","...oBBkBBBBBBo..","...oBBBBBBBBBo..","....oBBBBBBbo...",
+      ".....obbbbbo....","......ooooo.....","................","................"],
+    cream: [
+      "................","................","................","................",
+      ".ooooooooooo....",".oWWWWWWWWWoooo.",".oWGGGGGGGWoOOo.",".oWGgGGGGGWoOOo.",
+      ".oWGGGGGGGWoOOo.",".oWWWWWWWWWoooo.",".ooooooooooo....","................",
+      "................","................","................","................"],
+    patch: [
+      "................","................","..oooooooooooo..","..oWWWWWWWWWWo..",
+      "..oWkkkkkkkkWo..","..oWkooooookWo..","..oWkoOOOOokWo..","..oWkoOOOOokWo..",
+      "..oWkoOOOOokWo..","..oWkooooookWo..","..oWkkkkkkkkWo..","..oWWWWWWWWWWo..",
+      "..oooooooooooo..","................","................","................"],
+    spray: [
+      "................",".......oo.......","......oWWo.....s","......oWWo...s..",
+      ".....oooooo.....","....oWWWWWWo....","....oGGGGGGo....","....oGgGGGGo....",
+      "....oGgGGGGo....","....oGgGGGGo....","....oGGGGGGo....","....oGGGGGGo....",
+      ".....oooooo.....","................","................","................"],
+    other: [
+      "................","................",".....oooooo.....",".....oRRRRo.....",
+      ".....oRRRRo.....","..ooooRRRRoooo..","..oRRRRRRRRRRo..","..oRRRRRRRRRRo..",
+      "..oRRRRRRRRRRo..","..ooooRRRRoooo..",".....oRRRRo.....",".....oRRRRo.....",
+      ".....oooooo.....","................","................","................"],
+    clock: [
+      "................",".....oooooo.....","...ooWWWWWWoo...","..oWWWWoWWWWWo..",
+      "..oWWWWoWWWWWo..",".oWWWWWoWWWWWWo.",".oWWWWWoWWWWWWo.",".oWWWWWooooWWWo.",
+      ".oWWWWWWWWWWWWo.",".oWWWWWWWWWWWWo.","..oWWWWWWWWWWo..","..oWWWWWWWWWWo..",
+      "...ooWWWWWWoo...",".....oooooo.....","................","................"]
+  };
+  function sprite(key, size){
+    const rows = SPR[key] || SPR.other; let r = '';
+    rows.forEach((row, y) => { for (let x = 0; x < row.length && x < 16; x++){ const c = PAL[row[x]]; if (c) r += `<rect x="${x}" y="${y}" width="1" height="1" fill="${c}"/>`; } });
+    return `<svg class="sprite" width="${size}" height="${size}" viewBox="0 0 16 16" aria-hidden="true">${r}</svg>`;
+  }
+
+  // ---------- med types + standard units ----------
+  const TYPES = [
+    { k:'pill',      label:'PILL / CAPSULE', units:['capsule(s)','tablet(s)','mg','mcg','g'] },
+    { k:'tablet',    label:'TABLET',         units:['tablet(s)','½ tablet','mg','mcg','g'] },
+    { k:'liquid',    label:'LIQUID / SYRUP', units:['ml','tsp','tbsp','mg','fl oz'] },
+    { k:'injection', label:'INJECTION',      units:['ml','units','mg','mcg','cc'] },
+    { k:'inhaler',   label:'INHALER',        units:['puff(s)','mcg','mg'] },
+    { k:'drops',     label:'DROPS',          units:['drop(s)','ml'] },
+    { k:'cream',     label:'CREAM / OINT.',  units:['application','fingertip unit','g','cm strip'] },
+    { k:'patch',     label:'PATCH',          units:['patch','mcg/hr','mg/24hr'] },
+    { k:'spray',     label:'NASAL SPRAY',    units:['spray(s)','spray each nostril','mcg'] },
+    { k:'other',     label:'OTHER',          units:['dose','mg','ml','g','unit(s)','sachet','suppository'] }
+  ];
+  const typeOf = k => TYPES.find(t => t.k === k) || TYPES[TYPES.length - 1];
+  const PRESETS = [[60,'1H'],[240,'4H'],[360,'6H'],[480,'8H'],[720,'12H'],[1440,'24H'],[2880,'2 DAYS'],[10080,'WEEKLY']];
+
+  // ---------- storage ----------
+  const KEY = 'bitmeds.timers.v1', PREF = 'bitmeds.prefs.v1';
+  let meds = [], prefs = { sound:true, alerts:false };
+  try { meds = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(e) { meds = []; }
+  try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREF) || '{}')); } catch(e) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(meds)); } catch(e) {} };
+  const savePrefs = () => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch(e) {} };
+
+  // ---------- helpers ----------
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const pad = n => String(n).padStart(2, '0');
+  function fmtLeft(ms){
+    const s = Math.floor(Math.abs(ms) / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+    return d > 0 ? `${d}D ${pad(h)}:${pad(m)}` : `${pad(h)}:${pad(m)}:${pad(x)}`;
+  }
+  function fmtGap(min){
+    if (min % 10080 === 0) return min === 10080 ? 'weekly' : `every ${min/10080} weeks`;
+    if (min % 1440 === 0) return min === 1440 ? 'every 24 hours' : `every ${min/1440} days`;
+    const h = Math.floor(min / 60), m = min % 60;
+    return 'every ' + (h ? `${h}h` : '') + (h && m ? ' ' : '') + (m ? `${m}m` : '');
+  }
+  function fmtWhen(ts){
+    const d = new Date(ts), now = new Date(), t = d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+    const day = (a, b) => a.toDateString() === b.toDateString();
+    const tom = new Date(now); tom.setDate(now.getDate() + 1);
+    const yest = new Date(now); yest.setDate(now.getDate() - 1);
+    if (day(d, now)) return `today ${t}`;
+    if (day(d, tom)) return `tomorrow ${t}`;
+    if (day(d, yest)) return `yesterday ${t}`;
+    return d.toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' }) + ' ' + t;
+  }
+  const fmtAmt = n => (Math.round(n * 1000) / 1000).toString();
+
+  // ---------- sound + alerts ----------
+  let actx = null;
+  function beep(){
+    if (!prefs.sound) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      [660, 880, 660, 990].forEach((f, i) => {
+        const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + i * 0.14;
+        o.type = 'square'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+        o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 0.13);
+      });
+    } catch(e) {}
+  }
+  function notify(m){
+    if (!prefs.alerts || !('Notification' in window) || Notification.permission !== 'granted') return;
+    const body = `${doseLine(m, true)}${m.forWho ? ' for ' + m.forWho : ''}${m.desc ? ' — ' + m.desc : ''}`;
+    try { new Notification(`⏰ ${m.name} is due`, { body, tag: 'bitmeds-' + m.id, icon: 'icon-192.png' }); } catch(e) {}
+  }
+  function paintPrefs(){
+    $('soundBtn').classList.toggle('on', prefs.sound);
+    const granted = 'Notification' in window && Notification.permission === 'granted';
+    $('alertBtn').classList.toggle('on', prefs.alerts && granted);
+  }
+  $('soundBtn').onclick = () => { prefs.sound = !prefs.sound; savePrefs(); paintPrefs(); if (prefs.sound) beep(); };
+  $('alertBtn').onclick = async () => {
+    if (!('Notification' in window)) { toast('This browser can’t show alerts — sound still works.'); return; }
+    if (prefs.alerts) { prefs.alerts = false; savePrefs(); paintPrefs(); return; }
+    let p = Notification.permission;
+    if (p === 'default') p = await Notification.requestPermission();
+    if (p === 'granted') { prefs.alerts = true; toast('Alerts on — you’ll get a ping when a dose is due.'); }
+    else toast('Alerts are blocked in your browser settings.');
+    savePrefs(); paintPrefs();
+  };
+
+  // ---------- rendering ----------
+  const doseLine = (m, plain) => {
+    const a = `${fmtAmt(m.amount)} ${m.unit}`;
+    return plain ? a + (m.strength ? ` (${m.strength})` : '') : `<b>${esc(a)}</b>${m.strength ? ' · ' + esc(m.strength) : ''}`;
+  };
+
+  function render(){
+    const grid = $('grid');
+    if (!meds.length){
+      grid.innerHTML = `<div class="empty">${sprite('clock', 64)}<p>NO TIMERS YET.<br>ADD YOUR FIRST MED BELOW ▼</p><button class="btn ghost" id="demoBtn">LOAD AN EXAMPLE</button></div>`;
+      $('demoBtn').onclick = loadDemo;
+      tick(); return;
+    }
+    const sorted = [...meds].sort((a, b) => a.nextAt - b.nextAt);
+    grid.innerHTML = sorted.map(m => `
+      <article class="card" data-id="${m.id}">
+        <div class="top">
+          <div class="icon">${sprite(m.type, 50)}</div>
+          <div class="who">
+            <div class="name">${esc(m.name)}</div>
+            <div class="tag">${esc(typeOf(m.type).label)}${m.forWho ? ' · FOR ' + esc(m.forWho.toUpperCase()) : ''}</div>
+            <div class="dose">${doseLine(m)} · ${esc(fmtGap(m.intervalMin))}</div>
+          </div>
+          <button class="more" data-act="menu" aria-label="More options">⋮</button>
+          <div class="menu">
+            <button data-act="edit">✎ EDIT</button>
+            <button data-act="dup">⧉ DUPLICATE</button>
+            <button class="danger" data-act="del">✕ DELETE</button>
+          </div>
+        </div>
+        ${m.desc ? `<div class="desc">${esc(m.desc)}</div>` : ''}
+        <div class="clock">
+          <div class="lbl" data-f="lbl">NEXT DOSE IN</div>
+          <div class="t" data-f="t">--:--:--</div>
+          <div class="at" data-f="at"></div>
+          <div class="segs" data-f="segs">${'<i></i>'.repeat(12)}</div>
+        </div>
+        <button class="reset" data-act="reset">↺ GAVE IT · RESET</button>
+        <div class="last">${m.log && m.log.length ? 'Last given ' + esc(fmtWhen(m.log[0])) : 'Not given yet'}</div>
+      </article>`).join('');
+    tick();
+  }
+
+  function tick(){
+    const now = Date.now();
+    let due = 0, next = null, today = 0;
+    const sod = new Date(); sod.setHours(0,0,0,0);
+    meds.forEach(m => {
+      const left = m.nextAt - now, span = m.intervalMin * 60000;
+      (m.log || []).forEach(t => { if (t >= sod.getTime()) today++; });
+      if (left <= 0) due++; else if (!next || m.nextAt < next.nextAt) next = m;
+      // fire once per due time
+      if (left <= 0 && m.alertedFor !== m.nextAt){ m.alertedFor = m.nextAt; save(); beep(); notify(m); }
+      const card = document.querySelector(`.card[data-id="${m.id}"]`);
+      if (!card) return;
+      card.classList.toggle('due', left <= 0);
+      card.classList.toggle('soon', left > 0 && left <= Math.min(15 * 60000, span * 0.1));
+      card.querySelector('[data-f=lbl]').textContent = left <= 0 ? 'DUE NOW · OVERDUE BY' : 'NEXT DOSE IN';
+      card.querySelector('[data-f=t]').textContent = (left <= 0 ? '+' : '') + fmtLeft(left);
+      card.querySelector('[data-f=at]').textContent = (left <= 0 ? 'was due ' : 'due ') + fmtWhen(m.nextAt);
+      const frac = left <= 0 ? 1 : Math.max(0, Math.min(1, 1 - left / span));
+      const filled = Math.round(frac * 12);
+      card.querySelectorAll('.segs i').forEach((s, i) => s.classList.toggle('f', i < filled));
+    });
+    $('hudMeds').textContent = meds.length;
+    $('hudDue').textContent = due;
+    $('hudToday').textContent = today;
+    $('hudNext').textContent = next ? fmtLeft(next.nextAt - now) : '—';
+    document.title = due ? `(${due}) DOSE DUE — bitmeds` : 'bitmeds — Dose Timers';
+  }
+
+  // ---------- card actions ----------
+  let undoSnap = null, toastTimer = null;
+  function toast(msg, undo){
+    $('toastMsg').textContent = msg;
+    $('toastUndo').style.display = undo ? '' : 'none';
+    $('toast').classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), undo ? 6000 : 3500);
+  }
+  $('toastUndo').onclick = () => {
+    if (!undoSnap) return;
+    meds = undoSnap; undoSnap = null; save(); render();
+    $('toast').classList.remove('show');
+  };
+  const snap = () => JSON.parse(JSON.stringify(meds));
+
+  $('grid').addEventListener('click', e => {
+    const btn = e.target.closest('[data-act]'); if (!btn) return;
+    const card = btn.closest('.card'); const m = meds.find(x => x.id === card.dataset.id); if (!m) return;
+    const act = btn.dataset.act;
+    if (act !== 'menu') document.querySelectorAll('.menu.open').forEach(x => x.classList.remove('open'));
+    if (act === 'menu'){ e.stopPropagation(); const mn = card.querySelector('.menu'); const was = mn.classList.contains('open'); document.querySelectorAll('.menu.open').forEach(x => x.classList.remove('open')); if (!was) mn.classList.add('open'); return; }
+    if (act === 'reset'){
+      undoSnap = snap();
+      const now = Date.now();
+      m.log = [now, ...(m.log || [])].slice(0, 50);
+      m.nextAt = now + m.intervalMin * 60000;
+      save(); render(); beepConfirm();
+      toast(`${m.name} given. Next ${fmtWhen(m.nextAt)}.`, true);
+    }
+    if (act === 'edit') startEdit(m);
+    if (act === 'dup'){ undoSnap = snap(); meds.push({ ...JSON.parse(JSON.stringify(m)), id: uid(), name: m.name + ' (copy)', log: [] }); save(); render(); toast('Duplicated.', true); }
+    if (act === 'del'){ undoSnap = snap(); meds = meds.filter(x => x.id !== m.id); save(); render(); toast(`${m.name} deleted.`, true); if (editing === m.id) stopEdit(); }
+  });
+  document.addEventListener('click', e => { if (!e.target.closest('.menu,[data-act=menu]')) document.querySelectorAll('.menu.open').forEach(x => x.classList.remove('open')); });
+  function beepConfirm(){
+    if (!prefs.sound) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      [523, 784].forEach((f, i) => { const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + i * 0.09; o.type = 'square'; o.frequency.value = f; g.gain.setValueAtTime(0.08, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08); o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 0.09); });
+    } catch(e) {}
+  }
+
+  // ---------- form ----------
+  let selType = 'pill', editing = null;
+  function paintTypes(){
+    $('types').innerHTML = TYPES.map(t => `<button type="button" class="type${t.k === selType ? ' sel' : ''}" data-k="${t.k}">${sprite(t.k, 44)}${t.label}</button>`).join('');
+  }
+  function paintUnits(keep){
+    const units = typeOf(selType).units;
+    $('fUnit').innerHTML = units.map(u => `<option>${esc(u)}</option>`).join('');
+    if (keep && units.includes(keep)) $('fUnit').value = keep;
+    else if (keep){ $('fUnit').insertAdjacentHTML('beforeend', `<option>${esc(keep)}</option>`); $('fUnit').value = keep; }
+  }
+  $('types').addEventListener('click', e => {
+    const b = e.target.closest('.type'); if (!b) return;
+    selType = b.dataset.k; paintTypes(); paintUnits();
+  });
+  function paintPresets(){
+    const cur = (+$('fH').value || 0) * 60 + (+$('fM').value || 0);
+    $('presets').innerHTML = PRESETS.map(([m, l]) => `<button type="button" data-m="${m}" class="${m === cur ? 'sel' : ''}">${l}</button>`).join('');
+  }
+  $('presets').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const m = +b.dataset.m; $('fH').value = Math.floor(m / 60); $('fM').value = m % 60; paintPresets();
+  });
+  ['fH','fM'].forEach(id => $(id).addEventListener('input', paintPresets));
+  $('fStart').addEventListener('change', () => {
+    $('atWrap').style.display = $('fStart').value === 'at' ? '' : 'none';
+    if ($('fStart').value === 'at' && !$('fAt').value){ const d = new Date(Date.now() + 3600000); $('fAt').value = `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+  });
+
+  function resetForm(){
+    $('form').reset(); selType = 'pill'; paintTypes(); paintUnits();
+    $('fAmt').value = 1; $('fH').value = 8; $('fM').value = 0; $('atWrap').style.display = 'none';
+    $('err').textContent = ''; paintPresets();
+  }
+  function startEdit(m){
+    editing = m.id; selType = m.type; paintTypes(); paintUnits(m.unit);
+    $('fName').value = m.name; $('fFor').value = m.forWho || ''; $('fAmt').value = m.amount; $('fStr').value = m.strength || '';
+    $('fH').value = Math.floor(m.intervalMin / 60); $('fM').value = m.intervalMin % 60; paintPresets();
+    $('fDesc').value = m.desc || '';
+    $('fStart').innerHTML = `<option value="keep">Keep the current timer</option><option value="now">Just gave a dose — count down from now</option><option value="at">Next dose is due at a set time</option><option value="due">Due right now</option>`;
+    $('fStart').value = 'keep'; $('atWrap').style.display = 'none';
+    $('formTitle').textContent = '▸ EDIT MED'; $('saveBtn').textContent = '✓ SAVE CHANGES'; $('cancelBtn').style.display = '';
+    $('addmed').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+  function stopEdit(){
+    editing = null;
+    $('fStart').innerHTML = `<option value="now">Just gave a dose — count down from now</option><option value="at">Next dose is due at a set time</option><option value="due">Due right now — I haven't given it yet</option>`;
+    $('formTitle').textContent = '▸ ADD A MED'; $('saveBtn').textContent = '+ ADD TIMER'; $('cancelBtn').style.display = 'none';
+    resetForm();
+  }
+  $('cancelBtn').onclick = stopEdit;
+
+  $('form').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = $('fName').value.trim(), amount = parseFloat($('fAmt').value);
+    const intervalMin = (parseInt($('fH').value, 10) || 0) * 60 + (parseInt($('fM').value, 10) || 0);
+    if (!name) return $('err').textContent = 'Give the med a name.';
+    if (!(amount > 0)) return $('err').textContent = 'Amount needs to be more than 0.';
+    if (intervalMin < 1) return $('err').textContent = 'Set how long between doses (at least 1 minute).';
+    const now = Date.now(), start = $('fStart').value;
+    let nextAt, log;
+    const existing = editing && meds.find(x => x.id === editing);
+    if (start === 'keep' && existing){
+      nextAt = existing.log && existing.log[0] ? existing.log[0] + intervalMin * 60000 : existing.nextAt;
+    } else if (start === 'now'){ nextAt = now + intervalMin * 60000; }
+    else if (start === 'due'){ nextAt = now; }
+    else {
+      const [h, mi] = ($('fAt').value || '').split(':').map(Number);
+      if (isNaN(h)) return $('err').textContent = 'Pick the time the next dose is due.';
+      const d = new Date(); d.setHours(h, mi, 0, 0); if (d.getTime() <= now) d.setDate(d.getDate() + 1);
+      nextAt = d.getTime();
+    }
+    log = existing ? existing.log || [] : [];
+    if (start === 'now') log = [now, ...log].slice(0, 50);
+    const rec = { id: editing || uid(), type: selType, name, forWho: $('fFor').value.trim(), amount, unit: $('fUnit').value,
+                  strength: $('fStr').value.trim(), intervalMin, desc: $('fDesc').value.trim(), nextAt, log,
+                  alertedFor: start === 'due' ? null : (existing ? existing.alertedFor : null) };
+    undoSnap = snap();
+    if (existing) meds = meds.map(x => x.id === editing ? rec : x); else meds.push(rec);
+    save(); const was = !!existing; stopEdit(); render();
+    toast(was ? `${rec.name} updated.` : `${rec.name} timer added.`, true);
+    $('grid').scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+
+  function loadDemo(){
+    const now = Date.now(), H = 3600000;
+    meds = [
+      { id: uid(), type:'liquid', name:'Amoxicillin', forWho:'Harlow', amount:5, unit:'ml', strength:'250 mg / 5 ml', intervalMin:480, desc:'Pink liquid — shake well, give with food. Finish the whole bottle.', nextAt: now + 2.6*H, log:[now - 5.4*H] },
+      { id: uid(), type:'pill', name:'Ibuprofen', forWho:'', amount:2, unit:'tablet(s)', strength:'200 mg', intervalMin:360, desc:'Orange tablets with water. No more than 6 in 24h.', nextAt: now + 9*60000, log:[now - 5.85*H] },
+      { id: uid(), type:'injection', name:'Insulin (long-acting)', forWho:'', amount:12, unit:'units', strength:'', intervalMin:1440, desc:'Pen in the fridge door. Rotate sites — left side tonight.', nextAt: now - 4*60000, alertedFor: now - 4*60000, log:[now - 24.07*H] },
+      { id: uid(), type:'inhaler', name:'Albuterol', forWho:'Zayn', amount:2, unit:'puff(s)', strength:'90 mcg', intervalMin:240, desc:'Blue inhaler + spacer. Shake, wait 1 min between puffs.', nextAt: now + 3.2*H, log:[now - 0.8*H] }
+    ];
+    save(); render();
+  }
+
+  // ---------- boot ----------
+  $('logoMark').innerHTML = sprite('pill', 26);
+  paintTypes(); paintUnits(); paintPresets(); paintPrefs(); render();
+  setInterval(tick, 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+})();
+</script>
+</body>
+</html>
