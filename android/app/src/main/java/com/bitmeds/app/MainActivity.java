@@ -109,5 +109,12 @@ public class MainActivity extends Activity {
             PendingIntent pi = PendingIntent.getBroadcast(MainActivity.this, 7, cb, flags);
             return mgr.requestPinAppWidget(new ComponentName(MainActivity.this, MedWidget.class), null, pi);
         }
+
+        /** Pin the multi-med widget ("bitmeds · all meds"). */
+        @JavascriptInterface public boolean pinListWidget() {
+            AppWidgetManager mgr = getSystemService(AppWidgetManager.class);
+            if (mgr == null || !mgr.isRequestPinAppWidgetSupported()) return false;
+            return mgr.requestPinAppWidget(new ComponentName(MainActivity.this, MedListWidget.class), null, null);
+        }
     }
 }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>bitmeds — Dose Timers</title>
+<title>bitmeds</title>
 <meta name="description" content="bitmeds dose timers: add a med, pick its type, dose and schedule, and get an animated pixel countdown widget with a reset button.">
 <meta name="theme-color" content="#0b0b16">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -163,6 +163,7 @@
   .ring canvas{image-rendering:pixelated}
 
   /* add form */
+  .step,h2.sec,.card .tag,.clock .lbl,.empty p{text-wrap:balance}
   .addmed form{counter-reset:step}
   .step{counter-increment:step}
   .step::before{content:counter(step) " · "}
@@ -186,7 +187,8 @@
   .wprev canvas{width:96px;height:96px;image-rendering:pixelated}
   .wprev .wn{font-family:var(--px);font-size:10px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .wprev .wd{font-size:13px;font-weight:800;color:var(--acc-l,var(--yellow));margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .wprev .wt{font-family:var(--px);font-size:15px;color:var(--acc,var(--pill));margin-top:8px;text-shadow:0 0 8px var(--acc-glow)}
+  .wprev > div{min-width:0}
+  .wprev .wt{font-family:var(--px);font-size:clamp(11px,3.9vw,15px);white-space:nowrap;color:var(--acc,var(--pill));margin-top:8px;text-shadow:0 0 8px var(--acc-glow)}
   .wprev .wa{font-size:12px;color:var(--muted);margin-top:6px}
   .wprev .wb{grid-column:1/-1;font-family:var(--px);font-size:9px;text-align:center;padding:12px 8px;background:var(--acc,var(--pill));color:var(--acc-ink,#0b0b16);box-shadow:0 4px 0 var(--acc-d,var(--pill-deep));letter-spacing:1px}
   .wprev-cap{font-family:var(--px);font-size:7px;color:var(--muted);margin-top:16px;letter-spacing:1px}
@@ -330,7 +332,7 @@
         <div class="swatches" id="colors"></div>
         <div class="step sub">BACKGROUND</div>
         <div class="swatches" id="bgs"></div>
-        <div class="step sub">WIDGET ANIMATION — PICK 1 OF 6</div>
+        <div class="step sub">WIDGET ANIMATION · 6 STYLES</div>
         <div class="styles" id="styles"></div>
         <div class="wprev-cap">▼ HOME SCREEN WIDGET PREVIEW</div>
         <div class="wprev" id="wprev">
@@ -565,7 +567,8 @@
         ${hero ? `<div class="hero-body"><div class="ring"><canvas class="stylecv"></canvas></div>${clock}</div>` : clock}
         ${site ? `<div class="site"><span class="k">NEXT SITE ▸</span><b>${esc(site)}</b>${m.lastSite ? `<small>last: ${esc(m.lastSite)}</small>` : ''}</div>` : ''}
         <button class="reset" data-act="reset">↺ GAVE IT · RESET</button>
-        ${hero && NATIVE ? '<button class="widgetbtn" data-act="widget">＋ ADD THIS TO HOME SCREEN</button>' : ''}
+        ${hero && NATIVE ? '<button class="widgetbtn" data-act="widget">＋ ADD THIS MED TO HOME SCREEN</button>' : ''}
+        ${hero && NATIVE && meds.length > 1 ? '<button class="widgetbtn" data-act="listwidget">＋ ADD ALL-MEDS WIDGET</button>' : ''}
         <div class="last">${m.log && m.log.length ? 'Last given ' + esc(fmtWhen(m.log[0])) : 'Not given yet'}</div>
       </article>`;
   }
@@ -627,7 +630,7 @@
     $('hudNext').textContent = next ? fmtShort(next.nextAt - now) : '—';
     $('hudDueBox').classList.toggle('hot', due > 0);
     paintWPrev();
-    document.title = due ? `(${due}) DOSE DUE — bitmeds` : 'bitmeds — Dose Timers';
+    document.title = due ? `(${due}) DOSE DUE — bitmeds` : 'bitmeds';
   }
 
   // ---------- animated sprites (idle drip + plunger push) ----------
@@ -744,6 +747,7 @@
     if (act === 'reset') giveDose(m, btn);
     if (act === 'edit') startEdit(m);
     if (act === 'look') startEdit(m, true);
+    if (act === 'listwidget'){ let ok = false; try { ok = NATIVE.pinListWidget(); } catch(e) {} if (!ok) toast('Long-press your home screen → Widgets → bitmeds · all meds.'); }
     if (act === 'widget'){ let ok = false; try { ok = NATIVE.pinWidget(m.id); } catch(e) {} if (!ok) toast('Long-press your home screen → Widgets → bitmeds.'); }
     if (act === 'pin'){ const was = m.pinned; meds.forEach(x => x.pinned = false); m.pinned = !was; save(); firstPaint = true; render(); toast(m.pinned ? `${m.name} is your main timer.` : 'Unpinned.'); }
     if (act === 'dup'){ undoSnap = snap(); const c = { ...JSON.parse(JSON.stringify(m)), id: uid(), name: m.name + ' (copy)', log: [], pinned: false }; meds.push(c); fresh.add(c.id); save(); render(); toast('Duplicated.', true); }

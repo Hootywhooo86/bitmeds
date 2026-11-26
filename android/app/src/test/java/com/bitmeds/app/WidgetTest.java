@@ -66,6 +66,37 @@ public class WidgetTest {
         }
     }
 
+    @Test public void rendersListWidget() throws Exception {
+        Context c = ApplicationProvider.getApplicationContext();
+        long now = System.currentTimeMillis();
+        JSONArray meds = new JSONArray()
+                .put(testo(now + 2 * Sched.DAY + 13 * Sched.HOUR, now - 30 * Sched.HOUR))
+                .put(testo(now + 5 * Sched.HOUR, now - 60 * Sched.HOUR).put("id", "v").put("name", "Vitamin D").put("icon", "capsule").put("color", "#f472b6").put("bg", "#1e0f2e").put("style", "heart"))
+                .put(testo(now - 7 * Sched.MIN, now - 9 * Sched.HOUR).put("id", "i").put("name", "Insulin long-acting pen injection").put("icon", "pen").put("color", "#00e5ff").put("bg", "#0a1a2f").put("style", "tank"))
+                .put(testo(now + 20 * Sched.MIN, now - 7 * Sched.HOUR).put("id", "a").put("name", "Amoxicillin").put("icon", "bottle").put("color", "#a3e635").put("bg", "#0c1f17").put("style", "hourglass"))
+                .put(testo(now + 3 * Sched.DAY, now - 3 * Sched.DAY).put("id", "z").put("name", "Fish oil").put("icon", "drop").put("color", "#60a5fa").put("style", "hop"));
+        java.util.List<JSONObject> list = MedListWidget.sorted(meds);
+        assertEquals("Insulin long-acting pen injection", list.get(0).getString("name")); // overdue first
+        Bitmap[][] f = MedListWidget.frames(list, now);
+        float d = c.getResources().getDisplayMetrics().density;
+        int n = 0;
+        for (int[] size : new int[][]{{320, 150, 2}, {320, 290, 4}, {200, 150, 2}}) {
+            RemoteViews rv = MedListWidget.build(c, 9, list, f, size[2], now);
+            shot(c, rv.apply(c, new FrameLayout(c)), (int) (size[0] * d), (int) (size[1] * d), "list_" + (n++));
+        }
+    }
+
+    private static void shot(Context c, View v, int w, int h, String name) throws Exception {
+        v.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY));
+        v.layout(0, 0, w, h);
+        Bitmap out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas cv = new Canvas(out); cv.drawColor(0xFF2B3A4A); v.draw(cv);
+        File f = new File(System.getProperty("widgetOut", "build"), name + ".png");
+        f.getParentFile().mkdirs();
+        try (FileOutputStream o = new FileOutputStream(f)) { out.compress(Bitmap.CompressFormat.PNG, 100, o); }
+        assertTrue(f.length() > 0);
+    }
+
     @Test public void rendersWidgetSizes() throws Exception {
         Context c = ApplicationProvider.getApplicationContext();
         long now = System.currentTimeMillis();
@@ -73,7 +104,7 @@ public class WidgetTest {
         JSONObject due = testo(now - 12 * Sched.MIN, now - 4 * Sched.DAY);
         JSONObject pink = testo(now + 5 * Sched.HOUR, now - 60 * Sched.HOUR).put("name", "Vitamin D").put("icon", "capsule")
                 .put("color", "#f472b6").put("bg", "#1e0f2e").put("style", "heart").put("sites", new JSONArray());
-        JSONObject cyan = testo(now + 20 * Sched.HOUR, now - 10 * Sched.HOUR).put("name", "Insulin").put("icon", "pen")
+        JSONObject cyan = testo(now + 20 * Sched.HOUR, now - 10 * Sched.HOUR).put("name", "Insulin long-acting pen injection").put("icon", "pen")
                 .put("color", "#00e5ff").put("bg", "#0a1a2f").put("style", "tank");
         int n = 0;
         for (JSONObject m : new JSONObject[]{ok, due, pink, cyan}) {

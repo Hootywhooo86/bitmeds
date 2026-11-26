@@ -62,38 +62,38 @@
 
         <TextView
             android:id="@+id/name"
+                    android:ellipsize="end"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
+            android:layout_height="12dp"
             android:fontFamily="@font/press_start"
             android:gravity="center"
-            android:singleLine="true"
             android:text="Testosterone"
             android:textColor="#f4f1ff"
-            android:textSize="7sp" />
+        android:maxLines="1"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="4sp"
+        android:autoSizeMaxTextSize="8sp"
+        android:autoSizeStepGranularity="1sp" />
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:orientation="horizontal">
-            <TextView
-                android:id="@+id/days"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/press_start"
-                android:text="2D "
-                android:textColor="#34d399"
-                android:textSize="10sp" />
+            
             <Chronometer
                 android:id="@+id/chrono"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:gravity="center"
+                android:layout_height="17dp"
                 android:fontFamily="@font/press_start"
-                android:singleLine="true"
-                android:text="13:58:27"
+                android:text="2D 13:58:27"
                 android:textColor="#34d399"
-                android:textSize="10sp" />
+        android:maxLines="1"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="6sp"
+        android:autoSizeMaxTextSize="11sp"
+        android:autoSizeStepGranularity="1sp" />
         </LinearLayout>
 
         <!-- not shown in the small size, but the ids must exist -->
@@ -125,7 +125,11 @@
                 android:paddingBottom="4dp"
                 android:text="↺ GAVE IT"
                 android:textColor="#0b0b16"
-                android:textSize="7sp" />
+        android:maxLines="1"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="5sp"
+        android:autoSizeMaxTextSize="7sp"
+        android:autoSizeStepGranularity="1sp" />
         </FrameLayout>
     </LinearLayout>
 

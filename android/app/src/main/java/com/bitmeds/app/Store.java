@@ -45,10 +45,17 @@ final class Store {
         prefs(c).edit().remove("w_" + widgetId).remove("arm_" + widgetId).commit();
     }
 
-    /** Widget "are you sure" state: the time the GAVE IT button was first tapped. */
-    static long armedAt(Context c, int widgetId) { return prefs(c).getLong("arm_" + widgetId, 0); }
+    /** Widget "are you sure" state: which med's GAVE IT button was first tapped, and when. */
+    static long armedAt(Context c, int widgetId, String medId) {
+        String v = prefs(c).getString("arm_" + widgetId, "");
+        int bar = v.lastIndexOf('|');
+        if (bar < 0 || medId == null || !medId.equals(v.substring(0, bar))) return 0;
+        try { return Long.parseLong(v.substring(bar + 1)); } catch (NumberFormatException e) { return 0; }
+    }
 
-    static void arm(Context c, int widgetId, long t) { prefs(c).edit().putLong("arm_" + widgetId, t).commit(); }
+    static void arm(Context c, int widgetId, String medId, long t) {
+        prefs(c).edit().putString("arm_" + widgetId, medId == null ? "" : medId + "|" + t).commit();
+    }
 
     /** The med a widget shows: the one it was set to, else the pinned "main" med, else the next one due. */
     static JSONObject forWidget(Context c, JSONArray meds, int widgetId) {

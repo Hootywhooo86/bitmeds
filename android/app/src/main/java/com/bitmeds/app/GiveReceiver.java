@@ -20,6 +20,13 @@ public class GiveReceiver extends BroadcastReceiver {
     static final String ACTION_CYCLE = "com.bitmeds.app.CYCLE";
     static final String ACTION_PINNED = "com.bitmeds.app.PINNED";
     static final String EXTRA_MED = "med";
+
+    /** Widget button intent. The data URI makes each (widget, med, action) a distinct PendingIntent, so a tap can never log the wrong med. */
+    static Intent widgetIntent(Context c, String action, int wid, String medId) {
+        return new Intent(c, GiveReceiver.class).setAction(action)
+                .setData(android.net.Uri.parse("bitmeds://widget/" + wid + "/" + action + "/" + (medId == null ? "" : android.net.Uri.encode(medId))))
+                .putExtra(EXTRA_MED, medId).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, wid);
+    }
     /** The widget's GAVE IT button needs a second tap within this time, so a stray tap can't log a dose. */
     static final long CONFIRM_MS = 5000;
 
@@ -31,19 +38,19 @@ public class GiveReceiver extends BroadcastReceiver {
         switch (action) {
             case ACTION_WIDGET_GIVE: {
                 long now = System.currentTimeMillis();
-                if (now - Store.armedAt(c, wid) > CONFIRM_MS) {
-                    Store.arm(c, wid, now);
+                if (now - Store.armedAt(c, wid, medId) > CONFIRM_MS) {
+                    Store.arm(c, wid, medId, now);
                     Alarms.buzz(c, 15);
-                    MedWidget.update(c, AppWidgetManager.getInstance(c), wid);
+                    MedWidget.updateAll(c);
                     // put the button back if the second tap never comes
                     PendingResult pr = goAsync();
                     new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                        MedWidget.update(c, AppWidgetManager.getInstance(c), wid);
+                        MedWidget.updateAll(c);
                         pr.finish();
                     }, CONFIRM_MS + 200);
                     return;
                 }
-                Store.arm(c, wid, 0);
+                Store.arm(c, wid, null, 0);
                 give(c, medId);
                 return;
             }
@@ -92,7 +99,7 @@ public class GiveReceiver extends BroadcastReceiver {
         int idx = 0;
         for (int i = 0; i < meds.length(); i++) if (cur != null && cur.optString("id").equals(meds.optJSONObject(i).optString("id"))) idx = i;
         Store.setWidgetMed(c, wid, meds.optJSONObject((idx + 1) % meds.length()).optString("id"));
-        Store.arm(c, wid, 0);
+        Store.arm(c, wid, null, 0);
         MedWidget.update(c, AppWidgetManager.getInstance(c), wid);
     }
 

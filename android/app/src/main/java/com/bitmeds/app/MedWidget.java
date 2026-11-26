@@ -39,9 +39,11 @@ public class MedWidget extends AppWidgetProvider {
 
     @Override public void onDeleted(Context c, int[] ids) { for (int id : ids) Store.forgetWidget(c, id); }
 
+    /** Redraws every bitmeds widget: single-med timers and the multi-med list. */
     static void updateAll(Context c) {
         AppWidgetManager mgr = AppWidgetManager.getInstance(c);
         for (int id : mgr.getAppWidgetIds(new ComponentName(c, MedWidget.class))) update(c, mgr, id);
+        MedListWidget.updateAll(c);
     }
 
     static void update(Context c, AppWidgetManager mgr, int wid) {
@@ -70,7 +72,7 @@ public class MedWidget extends AppWidgetProvider {
         mgr.updateAppWidget(wid, views);
     }
 
-    private static double lum(int[] c) { return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255; }
+    static double lum(int[] c) { return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255; }
 
     /** "Right glute" → "R GLUTE" so it fits beside the due time. */
     static String shortSite(String site) {
@@ -93,7 +95,7 @@ public class MedWidget extends AppWidgetProvider {
 
         long now = System.currentTimeMillis(), next = m.optLong("nextAt"), left = next - now;
         boolean due = left <= 0, soon = Sched.isSoon(m, left);
-        boolean armed = now - Store.armedAt(c, wid) <= GiveReceiver.CONFIRM_MS;
+        boolean armed = now - Store.armedAt(c, wid, m.optString("id")) <= GiveReceiver.CONFIRM_MS;
 
         // the med's colours: accent (main / light / dark) and its background
         int[][] acc = Pixel.shades(Pixel.hex(Sprites.accent(m)));
@@ -114,12 +116,10 @@ public class MedWidget extends AppWidgetProvider {
         // Chronometer can't show days: show "3D" beside it and count the remainder. Alarms.reschedule
         // wakes us when the remainder hits zero so the day count steps down.
         long days = left >= Sched.DAY ? left / Sched.DAY : 0;
-        v.setChronometer(R.id.chrono, SystemClock.elapsedRealtime() + left - days * Sched.DAY, null, true);
+        String fmt = due ? "LATE %s" : days > 0 ? days + "D %s" : null;   // one Chronometer → it all autosizes as a unit
+        v.setChronometer(R.id.chrono, SystemClock.elapsedRealtime() + left - days * Sched.DAY, fmt, true);
         v.setChronometerCountDown(R.id.chrono, true);
         v.setTextColor(R.id.chrono, tone);
-        v.setTextViewText(R.id.days, due ? "LATE " : days > 0 ? days + "D " : "");
-        v.setTextColor(R.id.days, tone);
-        v.setViewVisibility(R.id.days, due || days > 0 ? View.VISIBLE : View.GONE);
         v.setTextViewText(R.id.due, (due ? "was due " : "due ") + Sched.when(c, next));
         v.setTextColor(R.id.due, Sprites.argb(Pixel.mix(bg, white, 0.58)));
 
@@ -130,14 +130,13 @@ public class MedWidget extends AppWidgetProvider {
         v.setInt(R.id.site, "setBackgroundColor", Sprites.argb(Pixel.mix(bg, white, 0.08)));
 
         v.setTextViewText(R.id.give_text, armed ? "TAP AGAIN TO LOG" : layout == R.layout.widget_small ? "↺ GAVE IT" : "↺ GAVE IT · RESET");
-        Intent give = new Intent(c, GiveReceiver.class).setAction(GiveReceiver.ACTION_WIDGET_GIVE)
-                .putExtra(GiveReceiver.EXTRA_MED, m.optString("id")).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, wid);
-        v.setOnClickPendingIntent(R.id.give, PendingIntent.getBroadcast(c, wid * 8 + 1, give, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+        Intent give = GiveReceiver.widgetIntent(c, GiveReceiver.ACTION_WIDGET_GIVE, wid, m.optString("id"));
+        v.setOnClickPendingIntent(R.id.give, PendingIntent.getBroadcast(c, 0, give, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
 
         v.setViewVisibility(R.id.cycle, count > 1 ? View.VISIBLE : View.GONE);
         v.setTextColor(R.id.cycle, Sprites.argb(acc[1]));
-        Intent cyc = new Intent(c, GiveReceiver.class).setAction(GiveReceiver.ACTION_CYCLE).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, wid);
-        v.setOnClickPendingIntent(R.id.cycle, PendingIntent.getBroadcast(c, wid * 8 + 2, cyc, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+        Intent cyc = GiveReceiver.widgetIntent(c, GiveReceiver.ACTION_CYCLE, wid, null);
+        v.setOnClickPendingIntent(R.id.cycle, PendingIntent.getBroadcast(c, 0, cyc, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
         return v;
     }
 }

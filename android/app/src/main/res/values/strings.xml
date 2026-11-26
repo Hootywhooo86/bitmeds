@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">bitmeds</string>
-    <string name="widget_name">bitmeds dose timer</string>
-    <string name="widget_desc">Live countdown to your next dose, with a GAVE IT button</string>
+    <string name="widget_name">bitmeds</string>
+    <string name="list_widget_name">bitmeds · all meds</string>
+    <string name="widget_desc">bitmeds: live countdown to one med, with a GAVE IT button</string>
+    <string name="list_widget_desc">bitmeds: up to 4 meds in one widget, each with its own timer and GAVE IT button</string>
 </resources>
