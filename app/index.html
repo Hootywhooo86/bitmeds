@@ -191,6 +191,16 @@
   .wprev .wt{font-family:var(--px);font-size:clamp(11px,3.9vw,15px);white-space:nowrap;color:var(--acc,var(--pill));margin-top:8px;text-shadow:0 0 8px var(--acc-glow)}
   .wprev .wa{font-size:12px;color:var(--muted);margin-top:6px}
   .wprev .wb{grid-column:1/-1;font-family:var(--px);font-size:9px;text-align:center;padding:12px 8px;background:var(--acc,var(--pill));color:var(--acc-ink,#0b0b16);box-shadow:0 4px 0 var(--acc-d,var(--pill-deep));letter-spacing:1px}
+  .txtprev{width:100%;max-width:120px;aspect-ratio:1;background:var(--cbg2,#101428);display:flex;flex-direction:column;justify-content:center;gap:10px;padding:8px;overflow:hidden}
+  .txtprev b{font-family:var(--px);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+  .txtprev .tp-n{font-size:7px;color:var(--ink)}
+  .txtprev .tp-t{font-size:clamp(8px,2.9vw,11px);color:var(--acc,var(--pill));text-shadow:0 0 8px var(--acc-glow)}
+  .wprev.textonly{grid-template-columns:1fr}
+  .wprev.textonly canvas{display:none}
+  .wprev.textonly .wn{font-size:13px}
+  .wprev.textonly .wt{font-size:clamp(18px,7vw,30px)}
+  .card.hero.textonly .clock .t{font-size:clamp(24px,9vw,52px)}
+  .card.hero.textonly .clock{padding:22px 10px 18px}
   .wprev-cap{font-family:var(--px);font-size:7px;color:var(--muted);margin-top:16px;letter-spacing:1px}
   @media (max-width:420px){ .styles{grid-template-columns:repeat(2,1fr)} }
 
@@ -332,7 +342,7 @@
         <div class="swatches" id="colors"></div>
         <div class="step sub">BACKGROUND</div>
         <div class="swatches" id="bgs"></div>
-        <div class="step sub">WIDGET ANIMATION · 6 STYLES</div>
+        <div class="step sub">WIDGET STYLE · 6 ANIMATIONS OR TEXT ONLY</div>
         <div class="styles" id="styles"></div>
         <div class="wprev-cap">▼ HOME SCREEN WIDGET PREVIEW</div>
         <div class="wprev" id="wprev">
@@ -374,7 +384,8 @@
   const iconOf = m => m.icon || PA.TYPE_ICON[m.type] || 'cross';
   const accOf = m => PA.validHex(m.color) ? m.color : PA.COLORS[0];
   const bgOf = m => PA.validHex(m.bg) ? m.bg : PA.BGS[0];
-  const styleOf = m => PA.STYLES.some(s => s[0] === m.style) ? m.style : 'ring';
+  const LOOKS = [...PA.STYLES, ['text', 'TEXT ONLY']];  // 6 animations + plain text with a timer
+  const styleOf = m => LOOKS.some(s => s[0] === m.style) ? m.style : 'ring';
   const sprite = (icon, size, acc) => PA.iconSvg(icon, size, acc);
   const sprSpan = (icon, size, acc) => `<span class="spr" data-icon="${icon}" data-acc="${acc || ''}" data-size="${size}">${sprite(icon, size, acc)}</span>`;
   const lum = c => { const [r, g, b] = PA.hex(c); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; };
@@ -545,7 +556,7 @@
           <div class="segs" data-f="segs">${segs}</div>
         </div>`;
     return `
-      <article class="card${hero ? ' hero' : ''}${enter}" data-id="${m.id}" style="--i:${i};--sd:${(i * 0.9) % 4}s;${accVars(accOf(m), bgOf(m))}">
+      <article class="card${hero ? ' hero' : ''}${hero && styleOf(m) === 'text' ? ' textonly' : ''}${enter}" data-id="${m.id}" style="--i:${i};--sd:${(i * 0.9) % 4}s;${accVars(accOf(m), bgOf(m))}">
         <div class="top">
           <div class="icon">${sprSpan(iconOf(m), 48, accOf(m))}</div>
           <div class="who">
@@ -564,7 +575,7 @@
           </div>
         </div>
         ${m.desc ? `<div class="desc">${esc(m.desc)}</div>` : ''}
-        ${hero ? `<div class="hero-body"><div class="ring"><canvas class="stylecv"></canvas></div>${clock}</div>` : clock}
+        ${hero ? `<div class="hero-body">${styleOf(m) === 'text' ? '' : '<div class="ring"><canvas class="stylecv"></canvas></div>'}${clock}</div>` : clock}
         ${site ? `<div class="site"><span class="k">NEXT SITE ▸</span><b>${esc(site)}</b>${m.lastSite ? `<small>last: ${esc(m.lastSite)}</small>` : ''}</div>` : ''}
         <button class="reset" data-act="reset">↺ GAVE IT · RESET</button>
         ${hero && NATIVE ? '<button class="widgetbtn" data-act="widget">＋ ADD THIS MED TO HOME SCREEN</button>' : ''}
@@ -769,7 +780,8 @@
       + `<label class="${list.some(c => c.toLowerCase() === cur.toLowerCase()) ? '' : 'sel'}" title="Any color">+<input type="color" data-custom="${kind}" value="${cur}"></label>`;
     $('colors').innerHTML = sw(PA.COLORS, selColor, 'color');
     $('bgs').innerHTML = sw(PA.BGS, selBg, 'bg');
-    $('styles').innerHTML = PA.STYLES.map(([k, l]) => `<button type="button" data-style="${k}" class="${k === selStyle ? 'sel' : ''}"><canvas data-style="${k}"></canvas>${l}</button>`).join('');
+    $('styles').innerHTML = LOOKS.map(([k, l]) => `<button type="button" data-style="${k}" class="${k === selStyle ? 'sel' : ''}">${k === 'text' ? '<div class="txtprev"><b class="tp-n"></b><b class="tp-t"></b></div>' : `<canvas data-style="${k}"></canvas>`}${l}</button>`).join('');
+    $('wprev').classList.toggle('textonly', selStyle === 'text');
     paintTypes();
   }
   $('icons').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; selIcon = b.dataset.icon; paintLook(); });
@@ -794,6 +806,7 @@
     const next = sched === 'days' ? (selDays.length ? nextSlotAfter({ days: selDays, time: $('fTime').value || '20:00' }, now) : now) : now + Math.max(1, mins) * 60000;
     $('wpTime').textContent = fmtLeft(next - now);
     $('wpDue').textContent = 'due ' + fmtWhen(next);
+    document.querySelectorAll('.txtprev').forEach(el => { el.querySelector('.tp-n').textContent = $('wpName').textContent; el.querySelector('.tp-t').textContent = fmtLeft(next - now); });
   }
   function paintTypes(){
     $('types').innerHTML = TYPES.map(t => `<button type="button" class="type${t.k === selType ? ' sel' : ''}" data-k="${t.k}">${sprSpan(PA.TYPE_ICON[t.k], 44, selColor)}${t.label}</button>`).join('');

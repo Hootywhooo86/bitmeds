@@ -50,7 +50,7 @@ public class MedWidget extends AppWidgetProvider {
         JSONArray meds = Store.load(c);
         JSONObject m = Store.forWidget(c, meds, wid);
         Bitmap[] frames = null;
-        if (m != null) {
+        if (m != null && !Sprites.textOnly(m)) {
             long now = System.currentTimeMillis(), left = m.optLong("nextAt") - now;
             int state = left <= 0 ? Sprites.STATE_DUE : Sched.isSoon(m, left) ? Sprites.STATE_SOON : Sprites.STATE_OK;
             float frac = Sched.frac(m, now);
@@ -108,7 +108,9 @@ public class MedWidget extends AppWidgetProvider {
         v.setInt(R.id.give_shadow, "setColorFilter", Sprites.argb(Pixel.shades(face)[2]));
         v.setTextColor(R.id.give_text, lum(face) > 0.55 ? 0xFF0B0B16 : 0xFFFFFFFF);
 
-        for (int k = 0; k < 4; k++) v.setImageViewBitmap(FRAMES[k], frames[k]);
+        boolean art = frames != null;   // "text only" style: no animation, the text column takes the whole widget
+        v.setViewVisibility(R.id.art_row, art ? View.VISIBLE : View.GONE);
+        if (art) for (int k = 0; k < 4; k++) v.setImageViewBitmap(FRAMES[k], frames[k]);
         v.setTextViewText(R.id.name, m.optString("name"));
         v.setTextViewText(R.id.dose, Sched.doseLine(m));
         v.setTextColor(R.id.dose, Sprites.argb(acc[1]));
@@ -123,11 +125,10 @@ public class MedWidget extends AppWidgetProvider {
         v.setTextViewText(R.id.due, (due ? "was due " : "due ") + Sched.when(c, next));
         v.setTextColor(R.id.due, Sprites.argb(Pixel.mix(bg, white, 0.58)));
 
+        // the next injection site rides on the due line, so it always fits
         String site = Sched.nextSite(m);
-        v.setViewVisibility(R.id.site, site.isEmpty() ? View.GONE : View.VISIBLE);
-        v.setTextViewText(R.id.site, shortSite(site));
-        v.setTextColor(R.id.site, Sprites.argb(acc[1]));
-        v.setInt(R.id.site, "setBackgroundColor", Sprites.argb(Pixel.mix(bg, white, 0.08)));
+        if (!site.isEmpty()) v.setTextViewText(R.id.due, (due ? "was due " : "due ") + Sched.when(c, next) + " · " + shortSite(site));
+        v.setViewVisibility(R.id.small_extra, !art && layout == R.layout.widget_small ? View.VISIBLE : View.GONE);
 
         v.setTextViewText(R.id.give_text, armed ? "TAP AGAIN TO LOG" : layout == R.layout.widget_small ? "↺ GAVE IT" : "↺ GAVE IT · RESET");
         Intent give = GiveReceiver.widgetIntent(c, GiveReceiver.ACTION_WIDGET_GIVE, wid, m.optString("id"));

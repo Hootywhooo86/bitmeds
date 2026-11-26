@@ -97,6 +97,39 @@ public class WidgetTest {
         assertTrue(f.length() > 0);
     }
 
+    /** Renders every widget at several sizes (phones put widgets in all sorts of shapes) to check nothing leaves dead space. */
+    @Test public void fillsEverySize() throws Exception {
+        Context c = ApplicationProvider.getApplicationContext();
+        long now = System.currentTimeMillis();
+        JSONObject anim = testo(now + 2 * Sched.DAY + 13 * Sched.HOUR, now - 30 * Sched.HOUR);
+        JSONObject text = testo(now + 5 * Sched.HOUR, now - 60 * Sched.HOUR).put("id", "v").put("name", "Vitamin D").put("style", "text")
+                .put("color", "#f472b6").put("bg", "#1e0f2e").put("sites", new JSONArray());
+        anim.put("name", "Testosterone");
+        float d = c.getResources().getDisplayMetrics().density;
+        int n = 0;
+        for (JSONObject m : new JSONObject[]{anim, text}) {
+            Store.save(c, new JSONArray().put(m));
+            Bitmap[] frames = null;
+            if (!Sprites.textOnly(m)) { frames = new Bitmap[4]; for (int k = 0; k < 4; k++) frames[k] = Sprites.frame(m, Sched.frac(m, now), 0, k, 4); }
+            for (int[] sz : new int[][]{{320, 150}, {320, 240}, {250, 110}}) {
+                RemoteViews rv = MedWidget.build(c, 5, m, 1, frames, R.layout.widget_wide);
+                shot(c, rv.apply(c, new FrameLayout(c)), (int) (sz[0] * d), (int) (sz[1] * d), "fill_wide_" + n + "_" + sz[0] + "x" + sz[1]);
+            }
+            for (int[] sz : new int[][]{{150, 150}, {120, 200}, {200, 150}}) {
+                RemoteViews rv = MedWidget.build(c, 5, m, 1, frames, R.layout.widget_small);
+                shot(c, rv.apply(c, new FrameLayout(c)), (int) (sz[0] * d), (int) (sz[1] * d), "fill_small_" + n + "_" + sz[0] + "x" + sz[1]);
+            }
+            n++;
+        }
+        // list: 1 med in a tall widget, 2 meds tall, mixed animated + text-only
+        java.util.List<JSONObject> one = java.util.Collections.singletonList(anim);
+        java.util.List<JSONObject> two = java.util.Arrays.asList(anim, text);
+        Bitmap[] big = new Bitmap[4]; for (int k = 0; k < 4; k++) big[k] = Sprites.frame(anim, Sched.frac(anim, now), 0, k, 4);
+        shot(c, MedWidget.build(c, 9, anim, 1, big, R.layout.widget_wide).apply(c, new FrameLayout(c)), (int) (320 * d), (int) (240 * d), "fill_list_1"); // list with 1 med uses this
+        shot(c, MedListWidget.build(c, 9, two, MedListWidget.frames(two, now), 4, now).apply(c, new FrameLayout(c)), (int) (320 * d), (int) (240 * d), "fill_list_2");
+        shot(c, MedListWidget.build(c, 9, two, MedListWidget.frames(two, now), 2, now).apply(c, new FrameLayout(c)), (int) (320 * d), (int) (150 * d), "fill_list_3");
+    }
+
     @Test public void rendersWidgetSizes() throws Exception {
         Context c = ApplicationProvider.getApplicationContext();
         long now = System.currentTimeMillis();

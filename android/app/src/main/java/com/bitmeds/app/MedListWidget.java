@@ -29,12 +29,12 @@ import java.util.Map;
  */
 public class MedListWidget extends AppWidgetProvider {
     static final int MAX = 4;
-    // per row: box, bg, line, frame0..3, name, chrono, give, give shadow, give face, give text
+    // per row: box, bg, line, frame0..3, name, chrono, give, give shadow, give face, give text, animation
     private static final int[][] ROW = {
-            {R.id.row0, R.id.r0_bg, R.id.r0_line, R.id.r0_f0, R.id.r0_f1, R.id.r0_f2, R.id.r0_f3, R.id.r0_name, R.id.r0_chrono, R.id.r0_give, R.id.r0_give_shadow, R.id.r0_give_face, R.id.r0_give_text},
-            {R.id.row1, R.id.r1_bg, R.id.r1_line, R.id.r1_f0, R.id.r1_f1, R.id.r1_f2, R.id.r1_f3, R.id.r1_name, R.id.r1_chrono, R.id.r1_give, R.id.r1_give_shadow, R.id.r1_give_face, R.id.r1_give_text},
-            {R.id.row2, R.id.r2_bg, R.id.r2_line, R.id.r2_f0, R.id.r2_f1, R.id.r2_f2, R.id.r2_f3, R.id.r2_name, R.id.r2_chrono, R.id.r2_give, R.id.r2_give_shadow, R.id.r2_give_face, R.id.r2_give_text},
-            {R.id.row3, R.id.r3_bg, R.id.r3_line, R.id.r3_f0, R.id.r3_f1, R.id.r3_f2, R.id.r3_f3, R.id.r3_name, R.id.r3_chrono, R.id.r3_give, R.id.r3_give_shadow, R.id.r3_give_face, R.id.r3_give_text}
+            {R.id.row0, R.id.r0_bg, R.id.r0_line, R.id.r0_f0, R.id.r0_f1, R.id.r0_f2, R.id.r0_f3, R.id.r0_name, R.id.r0_chrono, R.id.r0_give, R.id.r0_give_shadow, R.id.r0_give_face, R.id.r0_give_text, R.id.r0_flip},
+            {R.id.row1, R.id.r1_bg, R.id.r1_line, R.id.r1_f0, R.id.r1_f1, R.id.r1_f2, R.id.r1_f3, R.id.r1_name, R.id.r1_chrono, R.id.r1_give, R.id.r1_give_shadow, R.id.r1_give_face, R.id.r1_give_text, R.id.r1_flip},
+            {R.id.row2, R.id.r2_bg, R.id.r2_line, R.id.r2_f0, R.id.r2_f1, R.id.r2_f2, R.id.r2_f3, R.id.r2_name, R.id.r2_chrono, R.id.r2_give, R.id.r2_give_shadow, R.id.r2_give_face, R.id.r2_give_text, R.id.r2_flip},
+            {R.id.row3, R.id.r3_bg, R.id.r3_line, R.id.r3_f0, R.id.r3_f1, R.id.r3_f2, R.id.r3_f3, R.id.r3_name, R.id.r3_chrono, R.id.r3_give, R.id.r3_give_shadow, R.id.r3_give_face, R.id.r3_give_text, R.id.r3_flip}
     };
     private static final int C_YELLOW = 0xFFFACC15, C_RED = 0xFFFF5D5D;
 
@@ -65,17 +65,38 @@ public class MedListWidget extends AppWidgetProvider {
             JSONObject m = meds.get(i);
             long left = m.optLong("nextAt") - now;
             int state = left <= 0 ? Sprites.STATE_DUE : Sched.isSoon(m, left) ? Sprites.STATE_SOON : Sprites.STATE_OK;
+            if (Sprites.textOnly(m)) continue;          // no animation for "text only" meds
             for (int k = 0; k < 4; k++) f[i][k] = Sprites.frame(m, Sched.frac(m, now), state, k, 2);
         }
         return f;
+    }
+
+    static int stateOf(JSONObject m, long now) {
+        long left = m.optLong("nextAt") - now;
+        return left <= 0 ? Sprites.STATE_DUE : Sched.isSoon(m, left) ? Sprites.STATE_SOON : Sprites.STATE_OK;
     }
 
     static void update(Context c, AppWidgetManager mgr, int wid) {
         long now = System.currentTimeMillis();
         List<JSONObject> meds = sorted(Store.load(c));
         Bitmap[][] f = frames(meds, now);
-        RemoteViews two = build(c, wid, meds, f, 2, now), four = build(c, wid, meds, f, 4, now);
         RemoteViews views;
+        if (meds.size() == 1) {
+            // one med: use the full single-med layout so the widget is filled, not one stretched row
+            JSONObject m = meds.get(0);
+            Bitmap[] fr = f.length > 0 && f[0][0] != null ? f[0] : null;
+            if (fr != null) for (int k = 0; k < 4; k++) fr[k] = Sprites.frame(m, Sched.frac(m, now), stateOf(m, now), k, 4);
+            RemoteViews wide = MedWidget.build(c, wid, m, 1, fr, R.layout.widget_wide), small = MedWidget.build(c, wid, m, 1, fr, R.layout.widget_small);
+            if (Build.VERSION.SDK_INT >= 31) {
+                Map<SizeF, RemoteViews> map = new HashMap<>();
+                map.put(new SizeF(100f, 100f), small);
+                map.put(new SizeF(200f, 100f), wide);
+                views = new RemoteViews(map);
+            } else views = wide;
+            mgr.updateAppWidget(wid, views);
+            return;
+        }
+        RemoteViews two = build(c, wid, meds, f, 2, now), four = build(c, wid, meds, f, 4, now);
         if (Build.VERSION.SDK_INT >= 31) {
             Map<SizeF, RemoteViews> map = new HashMap<>();
             map.put(new SizeF(180f, 100f), two);
@@ -123,7 +144,9 @@ public class MedListWidget extends AppWidgetProvider {
 
             v.setInt(id[1], "setColorFilter", Sprites.argb(bg));
             v.setInt(id[2], "setColorFilter", isDue ? C_RED : Sprites.argb(Pixel.mix(bg, white, 0.16)));
-            for (int k = 0; k < 4; k++) v.setImageViewBitmap(id[3 + k], frames[i][k]);
+            boolean art = frames[i][0] != null;
+            v.setViewVisibility(id[13], art ? View.VISIBLE : View.GONE);
+            if (art) for (int k = 0; k < 4; k++) v.setImageViewBitmap(id[3 + k], frames[i][k]);
             v.setTextViewText(id[7], m.optString("name"));
 
             long days = left >= Sched.DAY ? left / Sched.DAY : 0;

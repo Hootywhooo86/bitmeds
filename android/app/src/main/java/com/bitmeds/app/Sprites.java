@@ -26,6 +26,9 @@ final class Sprites {
 
     static String accent(JSONObject m) { String c = m.optString("color"); return Pixel.validHex(c) ? c : Pixel.DEFAULT_COLOR; }
 
+    /** "text" = just the name and a big timer, no animation. */
+    static boolean textOnly(JSONObject m) { return "text".equals(m.optString("style")); }
+
     static String style(JSONObject m) {
         String s = m.optString("style");
         for (String x : Pixel.STYLES) if (x.equals(s)) return s;
