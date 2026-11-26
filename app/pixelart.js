@@ -56,7 +56,19 @@
     heart: ["................","................","...oooo..oooo...","..oAAAAooAAAAo..",
       ".oAALAAAAAAAAAo.",".oALLAAAAAAAAAo.",".oAAAAAAAAAAAAo.","..oAAAAAAAAAAo..",
       "...oAAAAAAAAo...","....oAAAAAAo....",".....oAAAAo.....","......oaao......",
-      ".......oo.......","................","................","................"]
+      ".......oo.......","................","................","................"],
+    star: ["................",".......oo.......","......oAAo......","......oAAo......",
+      ".....oALAAo.....","ooooooALAAoooooo","oAAAAAAAAAAAAAAo",".oAAAAAAAAAAAAo.",
+      "..oAAAAAAAAAAo..","...oAAAAAAAAo...","...oAAAAAAAAo...","..oAAAaooaAAAo..",
+      "..oAAaooooaAAo..",".oAAao....oaAAo.",".ooo........ooo.","................"],
+    sun: ["................",".......AA.......","..A....AA....A..","...A..oooo..A...",
+      ".....oAAAAo.....","....oLLAAAAo....","AA..oLAAAAAo..AA","AA..oAAAAAAo..AA",
+      "....oAAAAAAo....",".....oAAAAo.....","...A..oooo..A...","..A....AA....A..",
+      ".......AA.......","................","................","................"],
+    bandage: ["................","................","................","................",
+      "................",".oooooooooooooo.","oLLLLoAAAAoLLLLo","oLsLLoAkAAoLLsLo",
+      "oLLLLoAAkAoLLLLo","oLLsLoAAAAoLsLLo",".oooooooooooooo.","................",
+      "................","................","................","................"]
   };
 
   // syringe: f = filled oil columns 0..6 (plunger moves), drip = 0..3
@@ -86,9 +98,9 @@
   }
 
   var ICONS = [['syringe','SYRINGE'],['pen','PEN'],['vial','VIAL'],['capsule','CAPSULE'],['tablet','TABLET'],['bottle','BOTTLE'],
-               ['inhaler','INHALER'],['drop','DROPS'],['tube','CREAM'],['patch','PATCH'],['spray','SPRAY'],['heart','HEART'],['cross','PLUS']];
+               ['inhaler','INHALER'],['drop','DROPS'],['tube','CREAM'],['patch','PATCH'],['spray','SPRAY'],['heart','HEART'],['star','STAR'],['sun','SUN'],['bandage','BANDAGE'],['cross','PLUS']];
   var TYPE_ICON = { injection:'syringe', pill:'capsule', tablet:'tablet', liquid:'bottle', inhaler:'inhaler', drops:'drop', cream:'tube', patch:'patch', spray:'spray', other:'cross' };
-  var STYLES = [['ring','RING'],['battery','BATTERY'],['hourglass','HOURGLASS'],['heart','HEART'],['tank','TANK'],['hop','HOP']];
+  var STYLES = [['ring','RING'],['battery','BATTERY'],['hourglass','HOURGLASS'],['heart','HEART'],['tank','TANK'],['hop','HOP'],['rocket','ROCKET']];
   var COLORS = ['#34d399','#60a5fa','#a78bfa','#f472b6','#ff9f1c','#facc15','#22d3ee','#a3e635','#ff5d5d','#f4f1ff'];
   var BGS = ['#101428','#050508','#1e0f2e','#0c1f17','#0a1a2f','#2a0f17'];
 
@@ -126,7 +138,7 @@
     var c = { px: px, k: k, frac: frac, st: st, T: T, TR: TR, DIM: DIM, ac: ac, icon: o.icon || 'syringe',
               wob: st === 2 ? ((k & 1) === 1 ? 1 : -1) : 0,
               bob: st !== 2 && o.icon !== 'syringe' && (k & 1) === 1 ? -1 : 0 };
-    var fn = { ring: ring, battery: battery, hourglass: hourglass, heart: heart, tank: tank, hop: hop }[o.style] || ring;
+    var fn = { ring: ring, battery: battery, hourglass: hourglass, heart: heart, tank: tank, hop: hop, rocket: rocket }[o.style] || ring;
     fn(c);
     return px;
   }
@@ -275,6 +287,33 @@
       for (y = 4; y <= 9; y++) { put(c.px, ex, y, c.T[0]); put(c.px, ex + 1, y, c.T[0]); }
       put(c.px, ex, 11, c.T[0]); put(c.px, ex + 1, 11, c.T[0]);
     }
+  }
+
+  // 7. ROCKET — the icon blasts off up a dotted trail toward the moon as the dose gets closer
+  function rocket(c) {
+    var x, y, i, ST = [[4, 6], [13, 3], [26, 8], [47, 24], [33, 30], [45, 40], [7, 38], [29, 44], [16, 18], [49, 4], [3, 26], [36, 18]];
+    for (i = 0; i < ST.length; i++) if ((i + c.k) % 3 !== 0) put(c.px, ST[i][0], ST[i][1], c.TR[1]);
+    var moon = c.st === 2 ? c.T : [[201, 198, 224], [244, 241, 255], [120, 117, 150]];
+    for (y = 2; y <= 18; y++) for (x = 33; x <= 49; x++) {
+      var dx = x - 41, dy = y - 10, d = dx * dx + dy * dy;
+      if (d > 49) continue;
+      var col = d >= 37 ? moon[2] : (dx < -1 && dy < -1 && d < 26) ? moon[1] : moon[0];
+      if ((x === 43 && y === 8) || (x === 39 && y === 12) || (x === 44 && y === 13) || (x === 40 && y === 7)) col = moon[2];
+      put(c.px, x, y, col);
+    }
+    for (x = 0; x < G; x++) for (y = 48; y < G; y++) put(c.px, x, y, y === 48 ? c.TR[1] : c.TR[2]);
+    for (x = 12; x <= 31; x++) put(c.px, x, 47, c.TR[1]);
+    var iy = 20 - Math.round(c.frac * 22) + (c.st === 2 ? 0 : (c.k & 1) === 1 ? -1 : 0), ix = 6 + c.wob;
+    for (y = iy + 30; y < 47; y += 3) put(c.px, 22, y, y < iy + 38 ? c.T[1] : c.T[2]);
+    if (c.st !== 2 && c.frac < 1) {
+      var len = [3, 5, 4, 6][c.k], FL = [[250, 204, 21], [255, 159, 28], [255, 93, 93]];
+      for (y = 0; y < len; y++) for (x = 20; x <= 23; x++) {
+        if ((x === 20 || x === 23) && y > len - 3) continue;
+        put(c.px, x, iy + 25 + y, FL[Math.min(2, Math.floor(y / 2))]);
+      }
+    }
+    icon(c, ix, iy, 2);
+    if (c.st === 2 && (c.k & 1) === 0) { for (y = 22; y <= 27; y++) { put(c.px, 44, y, c.T[0]); put(c.px, 45, y, c.T[0]); } put(c.px, 44, 29, c.T[0]); put(c.px, 45, 29, c.T[0]); }
   }
 
   // ---- web helpers ----

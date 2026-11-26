@@ -34,10 +34,24 @@ A working, local-first dose timer app at `/app/` (https://hootywhooo86.github.io
 - Pick a med type (injection, pill/capsule, tablet, liquid, inhaler, drops, cream/gel, patch, nasal spray, other) — each has a pixel sprite and its own standard units (ml, mg, mcg, units, tablets, tsp, puffs, drops, sprays…).
 - Schedule either **set days + time** (e.g. Mon + Thu at 8 PM, for a twice-weekly injection) or **every X hours**. A dose given up to 6h early/late still counts for that slot, so the timer jumps to the next scheduled day.
 - Injections can rotate sites (L/R glute, thigh, delt, belly): each reset logs the site used and shows the next one.
-- **Look & feel per med**: 13 pixel icons (syringe, insulin pen, vial, capsule, tablet, bottle, inhaler, drops, cream, patch, spray, heart, plus), any colour (10 presets + custom picker), a background colour, and **6 widget animation styles** — RING, BATTERY, HOURGLASS, HEART, TANK, HOP — or **TEXT ONLY** (just the name and a big timer), chosen from live animated previews with a home-screen widget preview. The colour runs through the icon, animation, countdown and reset button.
+- **Look & feel per med**: 16 pixel icons (syringe, insulin pen, vial, capsule, tablet, bottle, inhaler, drops, cream, patch, spray, heart, star, sun, bandage, plus), any colour (10 presets + custom picker), a background colour, and **6 widget animation styles** — RING, BATTERY, HOURGLASS, HEART, TANK, HOP, ROCKET — or **TEXT ONLY** (just the name and a big timer), chosen from live animated previews with a home-screen widget preview. The colour runs through the icon, animation, countdown and reset button.
 - Each med is an animated countdown widget; the main (pinned) med gets a large card with a pixel progress ring. **GAVE IT · RESET** logs the dose and restarts the timer (with undo).
 - Animations: drifting pixel starfield, animated syringe (drip; plunger pushes and refills on reset), rolling digits, segmented progress bar, confetti burst + "+1 DOSE LOGGED", flashing/shaking red alarm state when overdue. All of it is turned off under "reduce motion".
 - Chiptune beep + optional browser notification when a dose is due (while the page is open). Data stays in the browser.
+
+## Everything else in the app (tabs)
+
+- **TIMERS** — the dose timers. Family profile filter (EVERYONE / each person). Each card shows supply left (`💧 6.5 ml LEFT · 13 DOSES · ~45D`, red when low) and the on-time streak (`🔥 12`). Menu: GAVE IT, **skip this dose** (logged, timer moves on, no supply used), **refill / set supply**, edit, style + colour, pin, duplicate, delete.
+- **Supply tracker** — set "have now / full refill / warn at N days left" on a med; every logged dose subtracts its amount; you get a refill warning (in-app + Android notification) when you're down to the warn threshold.
+- **HISTORY** — per med: streak, doses logged, % on time, missed + skipped; a pixel calendar (on time / late / skipped / missed / coming up); an injection-site body map (next, last used, counts); the recent-dose list.
+- **TRIP** — pick leave / come-home dates (and who's going): bitmeds counts every dose in that window from the real schedule, says if your supply is enough, and builds a packing checklist (needles, swabs, sharps box for injections; pill case; prescription note). Optional "pack your meds" reminder the evening before.
+- **LABS** — log bloodwork (total / free T, E2, hematocrit, PSA… or anything) with date, unit and note; each test gets a pixel line chart.
+- **MORE** — family profiles; reminder settings (heads-up N hours before, keep reminding every N minutes while overdue); **sync + family** (sign in with the 128bit family Supabase account; optional "dose taken" events to the family feed); **backup / restore** (.json) and a **dose log CSV** for the doctor.
+- Always clear of the status bar / notch and the keyboard.
+
+### Sync (Supabase)
+
+`app/sync.js` signs in to the family Supabase project ("128bit play") with email + password or an email code, and keeps one row per account in `public.bitmeds_state` (meds, history, labs, settings), merging per med by last change and remembering deletions. **One-time server setup:** run `supabase/bitmeds.sql` in the Supabase SQL editor (creates the table with row level security so each account only sees its own row). Until then the app works normally and the sync panel says sync isn't switched on yet. "Dose taken" family events go through the existing `log_events` function only when switched on in MORE.
 
 ## Android app + home screen widget (`android/`)
 

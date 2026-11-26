@@ -7,7 +7,7 @@ package com.bitmeds.app;
  */
 final class Pixel {
     static final int G = 52;
-    static final String[] STYLES = {"ring", "battery", "hourglass", "heart", "tank", "hop"};
+    static final String[] STYLES = {"ring", "battery", "hourglass", "heart", "tank", "hop", "rocket"};
     static final String DEFAULT_COLOR = "#34d399", DEFAULT_BG = "#101428";
     private static final int[] WHITE = {255, 255, 255}, BLACK = {0, 0, 0}, OUT = {7, 7, 15}, RED = {255, 93, 93}, YEL = {250, 204, 21};
 
@@ -99,6 +99,7 @@ final class Pixel {
             case "heart": heart(c); break;
             case "tank": tank(c); break;
             case "hop": hop(c); break;
+            case "rocket": rocket(c); break;
             default: ring(c);
         }
         return px;
@@ -266,6 +267,37 @@ final class Pixel {
             int ex = Math.min(ix + 33, 48);
             for (int y = 4; y <= 9; y++) { put(c.px, ex, y, c.T[0]); put(c.px, ex + 1, y, c.T[0]); }
             put(c.px, ex, 11, c.T[0]); put(c.px, ex + 1, 11, c.T[0]);
+        }
+    }
+
+    // 7. ROCKET
+    private static void rocket(C c) {
+        int[][] ST = {{4, 6}, {13, 3}, {26, 8}, {47, 24}, {33, 30}, {45, 40}, {7, 38}, {29, 44}, {16, 18}, {49, 4}, {3, 26}, {36, 18}};
+        for (int i = 0; i < ST.length; i++) if ((i + c.k) % 3 != 0) put(c.px, ST[i][0], ST[i][1], c.TR[1]);
+        int[][] moon = c.st == 2 ? c.T : new int[][]{{201, 198, 224}, {244, 241, 255}, {120, 117, 150}};
+        for (int y = 2; y <= 18; y++) for (int x = 33; x <= 49; x++) {
+            int dx = x - 41, dy = y - 10, d = dx * dx + dy * dy;
+            if (d > 49) continue;
+            int[] col = d >= 37 ? moon[2] : (dx < -1 && dy < -1 && d < 26) ? moon[1] : moon[0];
+            if ((x == 43 && y == 8) || (x == 39 && y == 12) || (x == 44 && y == 13) || (x == 40 && y == 7)) col = moon[2];
+            put(c.px, x, y, col);
+        }
+        for (int x = 0; x < G; x++) for (int y = 48; y < G; y++) put(c.px, x, y, y == 48 ? c.TR[1] : c.TR[2]);
+        for (int x = 12; x <= 31; x++) put(c.px, x, 47, c.TR[1]);
+        int iy = 20 - (int) Math.round(c.frac * 22) + (c.st == 2 ? 0 : (c.k & 1) == 1 ? -1 : 0), ix = 6 + c.wob;
+        for (int y = iy + 30; y < 47; y += 3) put(c.px, 22, y, y < iy + 38 ? c.T[1] : c.T[2]);
+        if (c.st != 2 && c.frac < 1) {
+            int len = new int[]{3, 5, 4, 6}[c.k];
+            int[][] FL = {{250, 204, 21}, {255, 159, 28}, {255, 93, 93}};
+            for (int y = 0; y < len; y++) for (int x = 20; x <= 23; x++) {
+                if ((x == 20 || x == 23) && y > len - 3) continue;
+                put(c.px, x, iy + 25 + y, FL[Math.min(2, y / 2)]);
+            }
+        }
+        icon(c, ix, iy, 2);
+        if (c.st == 2 && (c.k & 1) == 0) {
+            for (int y = 22; y <= 27; y++) { put(c.px, 44, y, c.T[0]); put(c.px, 45, y, c.T[0]); }
+            put(c.px, 44, 29, c.T[0]); put(c.px, 45, 29, c.T[0]);
         }
     }
 }

@@ -211,6 +211,57 @@ final class SpriteData {
             "................",
             "................",
             "................"});
+        G.put("star", new String[]{
+            "................",
+            ".......oo.......",
+            "......oAAo......",
+            "......oAAo......",
+            ".....oALAAo.....",
+            "ooooooALAAoooooo",
+            "oAAAAAAAAAAAAAAo",
+            ".oAAAAAAAAAAAAo.",
+            "..oAAAAAAAAAAo..",
+            "...oAAAAAAAAo...",
+            "...oAAAAAAAAo...",
+            "..oAAAaooaAAAo..",
+            "..oAAaooooaAAo..",
+            ".oAAao....oaAAo.",
+            ".ooo........ooo.",
+            "................"});
+        G.put("sun", new String[]{
+            "................",
+            ".......AA.......",
+            "..A....AA....A..",
+            "...A..oooo..A...",
+            ".....oAAAAo.....",
+            "....oLLAAAAo....",
+            "AA..oLAAAAAo..AA",
+            "AA..oAAAAAAo..AA",
+            "....oAAAAAAo....",
+            ".....oAAAAo.....",
+            "...A..oooo..A...",
+            "..A....AA....A..",
+            ".......AA.......",
+            "................",
+            "................",
+            "................"});
+        G.put("bandage", new String[]{
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            ".oooooooooooooo.",
+            "oLLLLoAAAAoLLLLo",
+            "oLsLLoAkAAoLLsLo",
+            "oLLLLoAAkAoLLLLo",
+            "oLLsLoAAAAoLsLLo",
+            ".oooooooooooooo.",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................"});
     }
 
     /** Fixed palette colour as 0xRRGGBB, or -1 for transparent / med-colour chars (A, a, L). */
