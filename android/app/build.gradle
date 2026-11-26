@@ -1,0 +1,64 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.bitmeds.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.bitmeds.app'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+
+    // One shared key so every build (any machine, any session) can update the installed app in place.
+    signingConfigs {
+        shared {
+            storeFile rootProject.file('bitmeds-debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+    buildTypes {
+        debug { signingConfig signingConfigs.shared }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.shared
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    sourceSets {
+        main { assets.srcDirs += [layout.buildDirectory.dir('generated/webassets').get().asFile] }
+    }
+    lint {
+        abortOnError false
+    }
+}
+
+// The app shows the same web app as the site: copy it in from ../app at build time.
+tasks.register('copyWebApp', Copy) {
+    from(rootProject.file('../app')) {
+        include 'index.html', 'fonts/**', 'icon-192.png', 'manifest.json'
+    }
+    into layout.buildDirectory.dir('generated/webassets/www')
+}
+preBuild.dependsOn 'copyWebApp'
+
+android.testOptions.unitTests.includeAndroidResources = true
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.14.1'
+}
+dependencies { testImplementation 'androidx.test:core:1.6.1' }
+tasks.withType(Test).configureEach {
+    systemProperty 'widgetOut', System.getProperty('widgetOut', "${buildDir}/widget-shots")
+    systemProperty 'robolectric.dependency.repo.url', 'https://maven-central.storage-download.googleapis.com/maven2/'
+}

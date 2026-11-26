@@ -31,13 +31,27 @@ bitmeds is the family's health quest source. Doses taken pay XP into 128bitlife,
 
 A working, local-first dose timer app at `/app/` (https://hootywhooo86.github.io/bitmeds/app/):
 
-- Pick a med type (pill/capsule, tablet, liquid, injection, inhaler, drops, cream, patch, nasal spray, other) — each has a pixel sprite and its own standard units (mg, mcg, g, ml, tsp, units, puffs, drops, sprays…).
-- Set amount + unit, optional strength and who it's for, how far between doses (1h–weekly presets or custom h/m), and a description of what you're giving.
-- Each med becomes a countdown widget: time left, when it's due, a segmented progress bar, yellow when close, flashing red when overdue, and a **GAVE IT · RESET** button that logs the dose and restarts the timer (with undo).
-- Chiptune beep + optional browser notification when a dose comes due (while the page is open). Data stays in the browser's localStorage. Installable to the home screen (manifest + icons).
+- Pick a med type (injection, pill/capsule, tablet, liquid, inhaler, drops, cream/gel, patch, nasal spray, other) — each has a pixel sprite and its own standard units (ml, mg, mcg, units, tablets, tsp, puffs, drops, sprays…).
+- Schedule either **set days + time** (e.g. Mon + Thu at 8 PM, for a twice-weekly injection) or **every X hours**. A dose given up to 6h early/late still counts for that slot, so the timer jumps to the next scheduled day.
+- Injections can rotate sites (L/R glute, thigh, delt, belly): each reset logs the site used and shows the next one.
+- Each med is an animated countdown widget; the main (pinned) med gets a large card with a pixel progress ring. **GAVE IT · RESET** logs the dose and restarts the timer (with undo).
+- Animations: drifting pixel starfield, animated syringe (drip; plunger pushes and refills on reset), rolling digits, segmented progress bar, confetti burst + "+1 DOSE LOGGED", flashing/shaking red alarm state when overdue. All of it is turned off under "reduce motion".
+- Chiptune beep + optional browser notification when a dose is due (while the page is open). Data stays in the browser.
+
+## Android app + home screen widget (`android/`)
+
+`downloads/bitmeds.apk` — install on Android 8+ (allow "install unknown apps" for your browser/files app).
+
+- The app shows the same web app (copied from `app/` at build time), stored on the phone.
+- **Home screen widget** (4×2, resizable down to 2×2): live ticking countdown (`2D 12:59:57`), animated pixel ring + syringe, due time, next injection site, and a **GAVE IT** button. The button needs a second tap within 5 s ("TAP AGAIN TO LOG") so a stray tap can't log a dose. `▸▸` switches the widget between meds. Add it from the app's "＋ ADD THIS TO HOME SCREEN" button or long-press the home screen → Widgets → bitmeds.
+- **Alarms when the app is closed**: an exact alarm posts a notification when a dose comes due, with **GAVE IT** and **SNOOZE 15 MIN** buttons. Alarms are restored after reboot.
+- Build: `cd android && ./gradlew assembleRelease` (needs the Android SDK, `ANDROID_HOME` set). Tests: `./gradlew testReleaseUnitTest` (Robolectric: schedule maths, site rotation, and renders every widget size/state to PNG).
+- Signing uses `android/bitmeds-debug.keystore` (password `android`), committed on purpose so any machine can build an update that installs over the existing app without losing data. It is a sideload key only — swap in a private key before ever publishing to the Play Store.
+- `android/tools/gen_assets.py` redraws the launcher icon, notification icon and widget previews.
 
 ## Status
 
 - Landing page + mock: live (coming-soon).
-- Dose timers: working v1 in `app/` (local-only, no account sync or push yet).
-- Full app build (accounts, family feed events, push):  not started. Formspree ID still needed in the waitlist form (`YOUR_FORM_ID` placeholder with a local-confirm fallback).
+- Dose timers: working in `app/` (local-only, no account sync yet).
+- Android app with home screen widget + alarms: v1.0 in `android/`, APK in `downloads/`. Built and tested in Robolectric; not yet tried on a real phone.
+- Accounts / family feed events: not started. Formspree ID still needed in the waitlist form (`YOUR_FORM_ID` placeholder with a local-confirm fallback).

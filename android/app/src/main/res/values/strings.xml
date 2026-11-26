@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">bitmeds</string>
+    <string name="widget_name">bitmeds dose timer</string>
+    <string name="widget_desc">Live countdown to your next dose, with a GAVE IT button</string>
+</resources>

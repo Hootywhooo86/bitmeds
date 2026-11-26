@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>bitmeds — Dose Timers</title>
-<meta name="description" content="bitmeds dose timers: add a med, pick its type, dose and how long between doses, and get a pixel countdown widget with a reset button.">
+<meta name="description" content="bitmeds dose timers: add a med, pick its type, dose and schedule, and get an animated pixel countdown widget with a reset button.">
 <meta name="theme-color" content="#0b0b16">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,8 +14,9 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
+  @font-face{font-family:'Press Start 2P';src:url(fonts/PressStart2P-Regular.ttf) format('truetype');font-display:swap}
   :root{
     --bg:#0b0b16; --panel:#141428; --panel-2:#1f1f3a; --line:#2a2a4a;
     --pill:#34d399; --pill-deep:#047857;
@@ -23,13 +24,14 @@
     --orange:#ff9f1c; --purple:#a78bfa; --blue:#60a5fa;
     --red:#ff5d5d; --red-deep:#991b1b;
     --ink:#f4f1ff; --muted:#9a97b8;
-    --px:'Press Start 2P',monospace;
+    --px:'Press Start 2P',ui-monospace,monospace;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{background:var(--bg)}
-  body{color:var(--ink);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
-  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:radial-gradient(rgba(52,211,153,.08) 1px, transparent 1px);background-size:22px 22px}
-  body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;background:repeating-linear-gradient(to bottom, rgba(0,0,0,.12) 0 2px, transparent 2px 4px)}
+  body{color:var(--ink);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;min-height:100vh;padding-bottom:env(safe-area-inset-bottom);-webkit-tap-highlight-color:transparent}
+  #stars{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+  #fx{position:fixed;inset:0;width:100%;height:100%;z-index:70;pointer-events:none}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:80;background:repeating-linear-gradient(to bottom, rgba(0,0,0,.13) 0 2px, transparent 2px 4px)}
   .wrap{max-width:1040px;margin:0 auto;padding:0 16px;position:relative;z-index:1}
   button{font:inherit;color:inherit;cursor:pointer}
   svg.sprite{image-rendering:pixelated;shape-rendering:crispEdges;display:block}
@@ -37,122 +39,195 @@
   /* top bar */
   nav{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 0 8px;padding-top:max(20px, env(safe-area-inset-top))}
   .logo{display:flex;align-items:center;gap:12px;font-family:var(--px);font-size:14px;color:var(--ink);text-decoration:none}
-  .logo-mark{width:34px;height:34px;background:var(--panel-2);display:grid;place-items:center;box-shadow:0 4px 0 #000, 4px 0 0 var(--line), -4px 0 0 var(--line), 0 -4px 0 var(--line)}
+  .logo-mark{width:34px;height:34px;background:var(--panel-2);display:grid;place-items:center;box-shadow:0 4px 0 #000, 4px 0 0 var(--line), -4px 0 0 var(--line), 0 -4px 0 var(--line);animation:bob 1.6s steps(2) infinite}
   .navbtns{display:flex;gap:8px}
-  .chip{font-family:var(--px);font-size:9px;padding:10px 10px;background:var(--panel-2);border:none;color:var(--ink);box-shadow:0 4px 0 #000;letter-spacing:1px}
+  .chip{font-family:var(--px);font-size:9px;padding:10px 10px;background:var(--panel-2);border:none;color:var(--ink);box-shadow:0 4px 0 #000;letter-spacing:1px;transition:transform .06s steps(2)}
   .chip.on{background:var(--pill);color:var(--bg);box-shadow:0 4px 0 var(--pill-deep)}
   .chip:active{transform:translateY(3px);box-shadow:0 1px 0 #000}
 
   /* HUD */
-  .hud{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 22px}
-  .hud .stat{background:var(--panel);border:3px solid var(--line);padding:10px 12px;font-family:var(--px);font-size:9px;color:var(--muted);line-height:1.7;flex:1;min-width:130px}
-  .hud .stat b{display:block;font-size:14px;color:var(--pill);margin-top:4px}
+  .hud{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 22px}
+  .hud .stat{background:var(--panel);border:3px solid var(--line);padding:10px 12px;font-family:var(--px);font-size:8px;color:var(--muted);line-height:1.7;min-width:0}
+  .hud .stat b{display:block;font-size:13px;color:var(--pill);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .hud .stat.due b{color:var(--red)}
+  .hud .stat.due.hot{border-color:var(--red);animation:pulseB 1s steps(2) infinite}
   .hud .stat.next b{color:var(--yellow)}
+  .hud .stat b.pop{animation:pop .35s steps(4)}
+  @keyframes pop{0%{transform:scale(1.6)}100%{transform:none}}
+  @keyframes pulseB{50%{border-color:var(--line)}}
 
   h2.sec{font-family:var(--px);font-size:11px;color:var(--pill);margin:0 0 14px;letter-spacing:1px}
+  h2.sec .cur{display:inline-block;animation:blinkc 1s steps(2,start) infinite}
+  @keyframes blinkc{to{visibility:hidden}}
 
   /* timer widgets */
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:20px;margin-bottom:34px}
   .card{background:var(--panel);border:3px solid var(--line);box-shadow:6px 6px 0 #000;padding:16px;position:relative;display:flex;flex-direction:column;gap:12px}
+  .card.enter{animation:materialize .5s steps(6) both;animation-delay:calc(var(--i,0) * 70ms)}
+  @keyframes materialize{0%{clip-path:inset(48% 0 48% 0);transform:scaleX(.6);filter:brightness(3)}45%{clip-path:inset(0 0 0 0);transform:scaleX(1.03);filter:brightness(1.6)}100%{clip-path:inset(0 0 0 0);transform:none;filter:none}}
   .card .top{display:flex;gap:12px;align-items:flex-start}
-  .card .icon{width:56px;height:56px;flex-shrink:0;background:var(--bg);border:3px solid var(--line);display:grid;place-items:center}
+  .card .icon{width:64px;height:64px;flex-shrink:0;background:var(--bg);border:3px solid var(--line);display:grid;place-items:center;overflow:hidden;position:relative}
+  .card .icon .spr{animation:bob 1.2s steps(2) infinite}
+  .card .icon::after{content:"";position:absolute;top:-10%;bottom:-10%;width:30%;left:-40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);transform:skewX(-20deg);animation:shine 4.5s steps(14) infinite;animation-delay:var(--sd,0s)}
+  @keyframes shine{0%,70%{left:-40%}100%{left:130%}}
+  @keyframes bob{50%{transform:translateY(-2px)}}
   .card .who{flex:1;min-width:0}
   .card .name{font-weight:800;font-size:17px;line-height:1.25;word-break:break-word}
   .card .tag{font-family:var(--px);font-size:8px;color:var(--purple);margin-top:6px;letter-spacing:1px;line-height:1.6}
-  .card .dose{font-size:14px;color:var(--ink);margin-top:6px}
+  .card .tag .pin{color:var(--yellow)}
+  .card .dose{font-size:14px;color:var(--ink);margin-top:6px;line-height:1.45}
   .card .dose b{color:var(--yellow)}
   .card .desc{font-size:13px;color:var(--muted);line-height:1.55;background:var(--bg);border-left:4px solid var(--purple);padding:8px 10px;word-break:break-word}
+  .card .site{display:flex;align-items:center;gap:10px;background:#1a1530;border:2px solid #3b2f63;padding:8px 10px;font-size:13px}
+  .card .site .k{font-family:var(--px);font-size:8px;color:var(--purple);letter-spacing:1px;flex-shrink:0}
+  .card .site b{color:var(--ink)}
+  .card .site small{color:var(--muted);margin-left:auto;font-size:11px;text-align:right}
   .card .more{background:none;border:none;color:var(--muted);font-family:var(--px);font-size:12px;padding:4px 2px;line-height:1}
-  .menu{position:absolute;right:12px;top:44px;background:var(--panel-2);border:3px solid var(--line);box-shadow:4px 4px 0 #000;z-index:5;display:none;min-width:150px}
-  .menu.open{display:block}
-  .menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:11px 12px;font-family:var(--px);font-size:9px;color:var(--ink)}
+  .menu{position:absolute;right:12px;top:44px;background:var(--panel-2);border:3px solid var(--line);box-shadow:4px 4px 0 #000;z-index:5;display:none;min-width:170px}
+  .menu.open{display:block;animation:menuIn .18s steps(3)}
+  @keyframes menuIn{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}
+  .menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:12px 12px;font-family:var(--px);font-size:9px;color:var(--ink)}
   .menu button:hover{background:var(--line)}
   .menu button.danger{color:var(--red)}
 
-  .clock{background:#07070f;border:3px solid var(--line);padding:14px 10px 12px;text-align:center}
+  .clock{background:#07070f;border:3px solid var(--line);padding:14px 10px 12px;text-align:center;position:relative;overflow:hidden}
   .clock .lbl{font-family:var(--px);font-size:8px;color:var(--muted);letter-spacing:1px}
-  .clock .t{font-family:var(--px);font-size:clamp(22px,7vw,28px);color:var(--pill);margin:10px 0 8px;text-shadow:0 0 10px rgba(52,211,153,.45);letter-spacing:1px}
+  .clock .t{font-family:var(--px);font-size:clamp(18px,6vw,24px);color:var(--pill);margin:10px 0 8px;text-shadow:0 0 10px rgba(52,211,153,.5);letter-spacing:1px;display:flex;justify-content:center;height:1.25em;overflow:hidden;white-space:nowrap}
+  .clock .t span{display:inline-block}
+  .clock .t span.roll{animation:roll .28s steps(4)}
+  @keyframes roll{0%{transform:translateY(-70%);opacity:.2}60%{transform:translateY(12%)}100%{transform:none;opacity:1}}
   .clock .at{font-size:12px;color:var(--muted)}
-  .segs{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin-top:10px}
-  .segs i{height:10px;background:#1a1a33}
+  .segs{display:grid;grid-template-columns:repeat(24,1fr);gap:2px;margin-top:10px;position:relative}
+  .segs i{height:10px;background:#1a1a33;transition:background .2s steps(2)}
   .segs i.f{background:var(--pill)}
+  .segs i.h{background:#fff !important;box-shadow:0 0 6px var(--pill)}
+  .card.just .segs i{animation:segpop .4s steps(3) both;animation-delay:calc(var(--j) * 18ms)}
+  @keyframes segpop{0%{transform:scaleY(2.4);background:#fff}100%{transform:none}}
 
-  .card.soon .clock .t{color:var(--yellow);text-shadow:0 0 10px rgba(250,204,21,.45)}
+  .card.soon .clock .t{color:var(--yellow);text-shadow:0 0 10px rgba(250,204,21,.5)}
   .card.soon .segs i.f{background:var(--yellow)}
-  .card.due{border-color:var(--red)}
+  .card.soon .segs i.h{box-shadow:0 0 6px var(--yellow)}
+  .card.due{border-color:var(--red);animation:alarm 4s steps(1) infinite}
   .card.due .clock{border-color:var(--red)}
-  .card.due .clock .t{color:var(--red);text-shadow:0 0 12px rgba(255,93,93,.6);animation:blink 1s steps(2,start) infinite}
-  .card.due .segs i.f{background:var(--red)}
-  @keyframes blink{to{visibility:hidden}}
+  .card.due .clock::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(-45deg,rgba(255,93,93,.08) 0 8px,transparent 8px 16px);animation:hazard 1s steps(4) infinite}
+  @keyframes hazard{to{background-position:22.6px 0}}
+  .card.due .clock .t{color:var(--red);text-shadow:0 0 12px rgba(255,93,93,.7)}
+  .card.due .clock .lbl{color:var(--red);animation:blinkc 1s steps(2,start) infinite}
+  .card.due .segs i{background:var(--red);animation:chase 1.2s steps(1) infinite;animation-delay:calc(var(--j) * 50ms)}
+  @keyframes chase{0%{opacity:1}50%{opacity:.25}}
+  .card.due .icon .spr{animation:wobble .5s steps(2) infinite}
+  @keyframes wobble{0%{transform:rotate(-8deg)}100%{transform:rotate(8deg)}}
+  @keyframes alarm{0%{transform:none}1%{transform:translate(-3px,0)}2%{transform:translate(3px,-1px)}3%{transform:translate(-3px,1px)}4%{transform:translate(2px,0)}5%{transform:none}}
 
-  .reset{font-family:var(--px);font-size:11px;padding:15px 12px;background:var(--pill);color:var(--bg);border:none;box-shadow:0 5px 0 var(--pill-deep);letter-spacing:1px;width:100%}
+  .reset{font-family:var(--px);font-size:11px;padding:16px 12px;background:var(--pill);color:var(--bg);border:none;box-shadow:0 5px 0 var(--pill-deep);letter-spacing:1px;width:100%;position:relative;overflow:hidden;transition:transform .06s steps(2)}
+  .reset::after{content:"";position:absolute;top:0;bottom:0;width:24px;left:-30px;background:rgba(255,255,255,.35);transform:skewX(-20deg);animation:sweep 3s steps(12) infinite}
+  @keyframes sweep{0%,60%{left:-30px}100%{left:110%}}
   .reset:active{transform:translateY(4px);box-shadow:0 1px 0 var(--pill-deep)}
-  .card.due .reset{background:var(--red);color:#fff;box-shadow:0 5px 0 var(--red-deep)}
+  .card.due .reset{background:var(--red);color:#fff;box-shadow:0 5px 0 var(--red-deep);animation:btnPulse 1s steps(2) infinite}
+  @keyframes btnPulse{50%{background:#ff8080}}
   .last{font-size:12px;color:var(--muted);text-align:center}
+  .card.just{animation:flash .45s steps(3)}
+  @keyframes flash{0%{box-shadow:0 0 0 4px #fff,6px 6px 0 #000;background:#24244a}100%{box-shadow:6px 6px 0 #000}}
+
+  /* hero */
+  .card.hero{grid-column:1/-1;border-color:#3b3b6b;background:linear-gradient(180deg,#17172f,#141428)}
+  .hero .hero-body{display:flex;gap:18px;align-items:center}
+  .ring{position:relative;width:168px;height:168px;flex-shrink:0}
+  .ring canvas{width:100%;height:100%;display:block}
+  .ring .spr{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+  .ring .spr svg{animation:bob 1.2s steps(2) infinite}
+  .card.due .ring .spr svg{animation:wobble .5s steps(2) infinite}
+  .hero .clock{flex:1;align-self:stretch;display:flex;flex-direction:column;justify-content:center}
+  .hero .clock .t{font-size:clamp(20px,7vw,38px)}
+  .hero .top .icon{display:none}
+  .hero .badge{font-family:var(--px);font-size:8px;color:var(--bg);background:var(--yellow);padding:6px 8px;letter-spacing:1px;box-shadow:0 3px 0 var(--yellow-deep);align-self:flex-start}
+  .widgetbtn{font-family:var(--px);font-size:9px;padding:12px;background:var(--panel-2);color:var(--ink);border:3px dashed var(--purple);letter-spacing:1px;width:100%}
+  @media (max-width:640px){
+    .hero .hero-body{flex-direction:column}
+    .hero .clock{width:100%}
+  }
 
   .empty{background:var(--panel);border:3px dashed var(--line);padding:34px 20px;text-align:center;grid-column:1/-1}
   .empty p{font-family:var(--px);font-size:10px;line-height:2;color:var(--muted);margin:14px 0 16px}
-  .empty .sprite{margin:0 auto}
+  .empty .spr{display:inline-block;animation:bob 1.2s steps(2) infinite}
 
   /* add form */
   .addmed{background:var(--panel);border:3px solid var(--line);box-shadow:6px 6px 0 #000;padding:20px;margin-bottom:40px}
-  .step{font-family:var(--px);font-size:9px;color:var(--yellow);margin:18px 0 10px;letter-spacing:1px;line-height:1.6}
+  .step{font-family:var(--px);font-size:9px;color:var(--yellow);margin:20px 0 10px;letter-spacing:1px;line-height:1.6}
   .step:first-of-type{margin-top:4px}
   .types{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
-  .type{background:var(--bg);border:3px solid var(--line);padding:10px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--px);font-size:7px;letter-spacing:.5px;color:var(--muted);line-height:1.4;text-align:center}
+  .type{background:var(--bg);border:3px solid var(--line);padding:10px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--px);font-size:7px;letter-spacing:.5px;color:var(--muted);line-height:1.4;text-align:center;transition:transform .08s steps(2)}
+  .type:active{transform:scale(.94)}
   .type.sel{border-color:var(--pill);color:var(--ink);background:#0f2a22;box-shadow:inset 0 0 0 2px var(--pill-deep)}
+  .type.sel .spr{animation:hop .45s steps(4)}
+  @keyframes hop{0%{transform:none}40%{transform:translateY(-8px)}70%{transform:translateY(1px)}100%{transform:none}}
   .row{display:flex;gap:10px;flex-wrap:wrap}
   .field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:140px}
   .field.s{flex:0 1 120px;min-width:100px}
   .field label{font-size:12px;color:var(--muted);font-weight:600}
-  input,select,textarea{padding:12px;background:var(--bg);border:3px solid var(--line);color:var(--ink);font-size:16px;font-family:'Inter',system-ui,sans-serif;width:100%;border-radius:0;appearance:none;-webkit-appearance:none}
+  input,select,textarea{padding:12px;background:var(--bg);border:3px solid var(--line);color:var(--ink);font-size:16px;font-family:'Inter',system-ui,sans-serif;width:100%;border-radius:0;appearance:none;-webkit-appearance:none;color-scheme:dark}
   select{background-image:linear-gradient(45deg,transparent 50%,var(--pill) 50%),linear-gradient(135deg,var(--pill) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 12px) 50%;background-size:6px 6px;background-repeat:no-repeat;padding-right:32px}
   input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pill)}
   textarea{resize:vertical;min-height:70px;line-height:1.5}
-  .presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-  .presets button{font-family:var(--px);font-size:9px;padding:10px 10px;background:var(--bg);border:3px solid var(--line);color:var(--muted)}
-  .presets button.sel{border-color:var(--pill);color:var(--ink);background:#0f2a22}
-  .hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
+  .tog{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:12px;border:3px solid var(--line)}
+  .tog button{font-family:var(--px);font-size:9px;padding:12px 6px;background:var(--bg);border:none;color:var(--muted);letter-spacing:1px;line-height:1.5}
+  .tog button.sel{background:var(--pill);color:var(--bg)}
+  .presets,.days,.sites{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .presets button,.days button,.sites button{font-family:var(--px);font-size:9px;padding:10px 10px;background:var(--bg);border:3px solid var(--line);color:var(--muted);transition:transform .08s steps(2)}
+  .presets button:active,.days button:active,.sites button:active{transform:scale(.92)}
+  .presets button.sel,.days button.sel,.sites button.sel{border-color:var(--pill);color:var(--ink);background:#0f2a22}
+  .days button{width:42px;padding:12px 0;text-align:center}
+  .sites button .n{color:var(--yellow);margin-right:6px}
+  .hint{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5}
   .hint b{color:var(--pill)}
   .actions{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
-  .btn{font-family:var(--px);font-size:10px;padding:14px 18px;background:var(--pill);color:var(--bg);border:none;box-shadow:0 5px 0 var(--pill-deep);letter-spacing:1px}
+  .btn{font-family:var(--px);font-size:10px;padding:14px 18px;background:var(--pill);color:var(--bg);border:none;box-shadow:0 5px 0 var(--pill-deep);letter-spacing:1px;transition:transform .06s steps(2)}
   .btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--pill-deep)}
   .btn.ghost{background:var(--panel-2);color:var(--ink);box-shadow:0 5px 0 #000}
   .err{color:var(--red);font-size:13px;margin-top:12px;min-height:1em}
+  .err.shake{animation:alarm .8s steps(1)}
 
-  /* toast */
-  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(140%);background:var(--panel-2);border:3px solid var(--pill);box-shadow:4px 4px 0 #000;padding:12px 14px;display:flex;gap:14px;align-items:center;z-index:60;transition:transform .15s steps(3);max-width:calc(100% - 32px);font-size:14px}
+  /* toast + floaters */
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(160%);background:var(--panel-2);border:3px solid var(--pill);box-shadow:4px 4px 0 #000;padding:12px 14px;display:flex;gap:14px;align-items:center;z-index:75;transition:transform .2s steps(4);max-width:calc(100% - 32px);width:max-content;font-size:14px}
   .toast.show{transform:translateX(-50%) translateY(0)}
   .toast button{font-family:var(--px);font-size:9px;background:var(--yellow);color:var(--bg);border:none;padding:9px 10px;box-shadow:0 3px 0 var(--yellow-deep);flex-shrink:0}
+  .floater{position:fixed;z-index:76;font-family:var(--px);font-size:12px;color:var(--yellow);text-shadow:3px 3px 0 #000;pointer-events:none;white-space:nowrap;animation:floatUp 1.3s steps(12) forwards}
+  @keyframes floatUp{0%{transform:translate(-50%,0) scale(.6);opacity:0}15%{transform:translate(-50%,-14px) scale(1.25);opacity:1}100%{transform:translate(-50%,-90px) scale(1);opacity:0}}
 
   footer{color:var(--muted);font-size:12px;text-align:center;padding:0 0 40px;line-height:1.7}
   footer a{color:var(--pill)}
+  @media (max-width:560px){
+    .hud{grid-template-columns:repeat(2,1fr)}
+  }
   @media (max-width:420px){
     .logo{font-size:12px}
     .chip{font-size:8px;padding:9px 8px}
-    .hud .stat{min-width:calc(50% - 5px)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation:none !important;transition:none !important}
   }
 </style>
 </head>
 <body>
+<canvas id="stars"></canvas>
+<canvas id="fx"></canvas>
 <div class="wrap">
   <nav>
-    <a class="logo" href="../"><span class="logo-mark" id="logoMark"></span> bitmeds</a>
+    <a class="logo" href="../" id="logoLink"><span class="logo-mark" id="logoMark"></span> bitmeds</a>
     <div class="navbtns">
       <button class="chip" id="soundBtn" title="Chiptune beep when a dose is due">♪ SOUND</button>
-      <button class="chip" id="alertBtn" title="Phone/desktop notification when a dose is due">🔔 ALERTS</button>
+      <button class="chip" id="alertBtn" title="Notification when a dose is due">🔔 ALERTS</button>
     </div>
   </nav>
 
   <div class="hud">
     <div class="stat">MEDS<b id="hudMeds">0</b></div>
-    <div class="stat due">DUE NOW<b id="hudDue">0</b></div>
+    <div class="stat due" id="hudDueBox">DUE NOW<b id="hudDue">0</b></div>
     <div class="stat next">NEXT UP<b id="hudNext">—</b></div>
     <div class="stat">GIVEN TODAY<b id="hudToday">0</b></div>
   </div>
 
-  <h2 class="sec">▸ DOSE TIMERS</h2>
+  <h2 class="sec">▸ DOSE TIMERS<span class="cur">_</span></h2>
   <div class="grid" id="grid"></div>
 
   <section class="addmed" id="addmed">
@@ -163,38 +238,52 @@
 
       <div class="step">2 · WHAT IS IT?</div>
       <div class="row">
-        <div class="field"><label for="fName">Med name</label><input id="fName" placeholder="e.g. Amoxicillin" maxlength="60" required></div>
-        <div class="field"><label for="fFor">Who it's for <span style="font-weight:400">(optional)</span></label><input id="fFor" placeholder="e.g. Harlow" maxlength="30"></div>
+        <div class="field"><label for="fName">Med name</label><input id="fName" placeholder="e.g. Testosterone cypionate" maxlength="60" required></div>
+        <div class="field"><label for="fFor">Who it's for <span style="font-weight:400">(optional)</span></label><input id="fFor" placeholder="e.g. Me" maxlength="30"></div>
       </div>
 
       <div class="step">3 · HOW MUCH?</div>
       <div class="row">
         <div class="field s"><label for="fAmt">Amount</label><input id="fAmt" type="number" inputmode="decimal" min="0" step="any" value="1" required></div>
         <div class="field"><label for="fUnit">Unit</label><select id="fUnit"></select></div>
-        <div class="field"><label for="fStr">Strength <span style="font-weight:400">(optional)</span></label><input id="fStr" placeholder="e.g. 500 mg" maxlength="30"></div>
+        <div class="field"><label for="fStr">Strength <span style="font-weight:400">(optional)</span></label><input id="fStr" placeholder="e.g. 200 mg/ml" maxlength="30"></div>
       </div>
 
-      <div class="step">4 · HOW FAR BETWEEN DOSES?</div>
-      <div class="presets" id="presets"></div>
-      <div class="row">
-        <div class="field s"><label for="fH">Hours</label><input id="fH" type="number" inputmode="numeric" min="0" max="999" value="8"></div>
-        <div class="field s"><label for="fM">Minutes</label><input id="fM" type="number" inputmode="numeric" min="0" max="59" value="0"></div>
+      <div class="step">4 · WHEN IS IT DUE?</div>
+      <div class="tog" id="schedTog">
+        <button type="button" data-s="days">SET DAYS + TIME</button>
+        <button type="button" data-s="interval">EVERY X HOURS</button>
       </div>
-
-      <div class="step">5 · WHEN DOES THE TIMER START?</div>
-      <div class="row">
-        <div class="field"><label for="fStart">Start</label>
-          <select id="fStart">
-            <option value="now">Just gave a dose — count down from now</option>
-            <option value="at">Next dose is due at a set time</option>
-            <option value="due">Due right now — I haven't given it yet</option>
-          </select>
+      <div id="daysPanel">
+        <div class="presets" id="dayPresets"></div>
+        <div class="days" id="days"></div>
+        <div class="row">
+          <div class="field s"><label for="fTime">At</label><input id="fTime" type="time" value="20:00"></div>
         </div>
+        <div class="hint" id="daysHint"></div>
+      </div>
+      <div id="intPanel" style="display:none">
+        <div class="presets" id="presets"></div>
+        <div class="row">
+          <div class="field s"><label for="fH">Hours</label><input id="fH" type="number" inputmode="numeric" min="0" max="999" value="8"></div>
+          <div class="field s"><label for="fM">Minutes</label><input id="fM" type="number" inputmode="numeric" min="0" max="59" value="0"></div>
+        </div>
+      </div>
+
+      <div id="sitesStep" style="display:none">
+        <div class="step">5 · ROTATE INJECTION SITES <span style="color:var(--muted)">(OPTIONAL)</span></div>
+        <div class="sites" id="sites"></div>
+        <div class="hint">Tap sites in the order you rotate through them. Each reset moves to the next one.</div>
+      </div>
+
+      <div class="step" id="startStep">5 · WHERE ARE YOU NOW?</div>
+      <div class="row">
+        <div class="field"><label for="fStart">Timer start</label><select id="fStart"></select></div>
         <div class="field s" id="atWrap" style="display:none"><label for="fAt">Due at</label><input id="fAt" type="time"></div>
       </div>
 
-      <div class="step">6 · DESCRIPTION — WHAT YOU'RE GIVING</div>
-      <textarea id="fDesc" maxlength="240" placeholder="e.g. Pink liquid, shake well. Give with food. Finish the whole bottle."></textarea>
+      <div class="step" id="descStep">6 · DESCRIPTION — WHAT YOU'RE GIVING</div>
+      <textarea id="fDesc" maxlength="240" placeholder="e.g. Swab vial + site. Room-temp oil, draw slowly."></textarea>
 
       <div class="err" id="err"></div>
       <div class="actions">
@@ -204,8 +293,9 @@
     </form>
   </section>
 
-  <footer>
-    Saved on this device only. Alerts and sounds work while bitmeds is open —<br>add it to your home screen to keep it one tap away.<br>
+  <footer id="foot">
+    Saved on this device only. Alerts and sounds work while this page is open.<br>
+    For a home screen widget and alarms when the app is closed, install the <a href="../downloads/bitmeds.apk">bitmeds Android app</a>.<br>
     bitmeds is a reminder, not medical advice — follow your doctor or pharmacist's directions.<br>
     <a href="../">← back to bitmeds</a>
   </footer>
@@ -215,95 +305,148 @@
 
 <script>
 (() => {
+  const NATIVE = window.BitmedsAndroid || null;
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   // ---------- pixel sprites (16x16, one char per pixel) ----------
   const PAL = { o:'#0b0b16', W:'#f4f1ff', G:'#34d399', g:'#047857', Y:'#facc15', y:'#a16207',
-                R:'#ff5d5d', B:'#60a5fa', b:'#1d4ed8', P:'#a78bfa', p:'#6d28d9', O:'#ff9f1c', s:'#9a97b8', k:'#c9c6e0' };
+                R:'#ff5d5d', B:'#60a5fa', b:'#1d4ed8', P:'#a78bfa', p:'#6d28d9', O:'#ff9f1c', s:'#9a97b8', k:'#c9c6e0', q:'#2a2a4a' };
   const SPR = {
-    pill: [
-      "................","................","................","................",
+    pill: ["................","................","................","................",
       "...oooooooooo...","..oGGGGGWWWWWo..",".oGGGGGGWWWWWWo.",".oGgGGGGWWWWkWo.",
       ".oGgGGGGWWWWkWo.",".oGGGGGGWWWWWWo.","..oGGGGGWWWWWo..","...oooooooooo...",
       "................","................","................","................"],
-    tablet: [
-      "................","................",".....oooooo.....","...ooWWWWWWoo...",
+    tablet: ["................","................",".....oooooo.....","...ooWWWWWWoo...",
       "..oWWWWWWWWWWo..","..oWWWWWWWWWWo..",".oWWWWWWWWWWWWo.",".okkkkkkkkkkkko.",
       ".oWWWWWWWWWWWWo.","..oWWWWWWWWWWo..","..oWWWWWWWWWWo..","...ooWWWWWWoo...",
       ".....oooooo.....","................","................","................"],
-    liquid: [
-      "................","......oooo......","......oRRo......","......oRRo......",
+    liquid: ["................","......oooo......","......oRRo......","......oRRo......",
       ".....oooooo.....","....oWWWWWWo....","....oWkWWWWo....","....oPPPPPPo....",
       "....oPpPPPPo....","....oPpPPPPo....","....oPPPPPPo....","....oPPPPPPo....",
       "....oPPPPPPo....",".....oooooo.....","................","................"],
-    injection: [
-      "................","................","................","................",
-      "................","o...........o...","o..oooooooooo...","ooooBBBBBBkWWosss",
-      "o..oBbBBBBkWWo..","o..oooooooooo...","o...........o...","................",
-      "................","................","................","................"],
-    inhaler: [
-      "................","....oooo........","....oYYo........","....oYyo........",
+    inhaler: ["................","....oooo........","....oYYo........","....oYyo........",
       "....oYyo........","....oYyo........","....oYyo........","....oYyooooooo..",
       "....oYYYYYYYYYo.","....oYYYYYYYYYo.","....oYYYYYooooo.","....oooooo......",
       "................","................","................","................"],
-    drops: [
-      "................","........o.......",".......oBo......",".......oBo......",
+    drops: ["................","........o.......",".......oBo......",".......oBo......",
       "......oBBBo.....",".....oBBBBBo....","....oBBBBBBBo...","....oBkBBBBBo...",
       "...oBBkBBBBBBo..","...oBBkBBBBBBo..","...oBBBBBBBBBo..","....oBBBBBBbo...",
       ".....obbbbbo....","......ooooo.....","................","................"],
-    cream: [
-      "................","................","................","................",
+    cream: ["................","................","................","................",
       ".ooooooooooo....",".oWWWWWWWWWoooo.",".oWGGGGGGGWoOOo.",".oWGgGGGGGWoOOo.",
       ".oWGGGGGGGWoOOo.",".oWWWWWWWWWoooo.",".ooooooooooo....","................",
       "................","................","................","................"],
-    patch: [
-      "................","................","..oooooooooooo..","..oWWWWWWWWWWo..",
+    patch: ["................","................","..oooooooooooo..","..oWWWWWWWWWWo..",
       "..oWkkkkkkkkWo..","..oWkooooookWo..","..oWkoOOOOokWo..","..oWkoOOOOokWo..",
       "..oWkoOOOOokWo..","..oWkooooookWo..","..oWkkkkkkkkWo..","..oWWWWWWWWWWo..",
       "..oooooooooooo..","................","................","................"],
-    spray: [
-      "................",".......oo.......","......oWWo.....s","......oWWo...s..",
+    spray: ["................",".......oo.......","......oWWo.....s","......oWWo...s..",
       ".....oooooo.....","....oWWWWWWo....","....oGGGGGGo....","....oGgGGGGo....",
       "....oGgGGGGo....","....oGgGGGGo....","....oGGGGGGo....","....oGGGGGGo....",
       ".....oooooo.....","................","................","................"],
-    other: [
-      "................","................",".....oooooo.....",".....oRRRRo.....",
+    other: ["................","................",".....oooooo.....",".....oRRRRo.....",
       ".....oRRRRo.....","..ooooRRRRoooo..","..oRRRRRRRRRRo..","..oRRRRRRRRRRo..",
       "..oRRRRRRRRRRo..","..ooooRRRRoooo..",".....oRRRRo.....",".....oRRRRo.....",
-      ".....oooooo.....","................","................","................"],
-    clock: [
-      "................",".....oooooo.....","...ooWWWWWWoo...","..oWWWWoWWWWWo..",
-      "..oWWWWoWWWWWo..",".oWWWWWoWWWWWWo.",".oWWWWWoWWWWWWo.",".oWWWWWooooWWWo.",
-      ".oWWWWWWWWWWWWo.",".oWWWWWWWWWWWWo.","..oWWWWWWWWWWo..","..oWWWWWWWWWWo..",
-      "...ooWWWWWWoo...",".....oooooo.....","................","................"]
+      ".....oooooo.....","................","................","................"]
   };
-  function sprite(key, size){
-    const rows = SPR[key] || SPR.other; let r = '';
-    rows.forEach((row, y) => { for (let x = 0; x < row.length && x < 16; x++){ const c = PAL[row[x]]; if (c) r += `<rect x="${x}" y="${y}" width="1" height="1" fill="${c}"/>`; } });
+  // syringe, drawn in code so the plunger + oil level can animate. f = filled columns 0..6, drip = 0..3
+  // (mirrored in the Android app's Sprites.java)
+  function syringeRows(f, drip){
+    const g = Array.from({length:16}, () => Array(16).fill('.'));
+    const set = (x, y, c) => { if (x >= 0 && x < 16 && y >= 0 && y < 16) g[y][x] = c; };
+    for (let x = 4; x <= 11; x++){ set(x, 4, 'o'); set(x, 9, 'o'); }
+    for (let y = 4; y <= 9; y++){ set(4, y, 'o'); set(11, y, 'o'); }
+    set(3, 3, 'o'); set(4, 3, 'o'); set(3, 10, 'o'); set(4, 10, 'o');           // finger grips
+    for (let x = 5; x <= 10; x++) for (let y = 5; y <= 8; y++){
+      const full = x >= 11 - f;
+      set(x, y, full ? (y === 5 ? 'W' : y === 8 ? 'y' : 'Y') : (y === 5 ? 'k' : 'q'));
+    }
+    for (let x = 6; x <= 10; x += 2) set(x, 5, (x >= 11 - f) ? 'O' : 's');     // dose marks
+    const stop = 10 - f;                                                          // rubber stopper
+    if (stop >= 5) for (let y = 5; y <= 8; y++) set(stop, y, 'o');
+    const plate = Math.max(0, Math.min(3, stop - 4));
+    for (let y = 4; y <= 9; y++) set(plate, y, 'o');
+    for (let x = plate + 1; x < Math.max(stop, 5); x++){ if (x === 4) continue; set(x, 6, 'k'); set(x, 7, 's'); }
+    set(12, 6, 'o'); set(12, 7, 'o'); set(12, 8, 'o');                              // hub
+    for (let x = 13; x <= 15; x++) set(x, 7, 'k');                                  // needle
+    if (drip === 1) set(15, 8, 'Y');
+    if (drip === 2){ set(15, 8, 'Y'); set(15, 9, 'Y'); }
+    if (drip === 3) set(15, 11, 'Y');
+    return g.map(r => r.join(''));
+  }
+  SPR.injection = syringeRows(6, 0);
+  function rowsSvg(rows, size){
+    let r = '';
+    rows.forEach((row, y) => {
+      let x = 0;
+      while (x < 16){ const c = row[x]; if (!PAL[c]){ x++; continue; } let w = 1; while (x + w < 16 && row[x + w] === c) w++; r += `<rect x="${x}" y="${y}" width="${w}" height="1" fill="${PAL[c]}"/>`; x += w; }
+    });
     return `<svg class="sprite" width="${size}" height="${size}" viewBox="0 0 16 16" aria-hidden="true">${r}</svg>`;
   }
+  const sprite = (key, size) => rowsSvg(SPR[key] || SPR.other, size);
+  const sprSpan = (key, size) => `<span class="spr" data-key="${key}" data-size="${size}">${sprite(key, size)}</span>`;
 
   // ---------- med types + standard units ----------
   const TYPES = [
+    { k:'injection', label:'INJECTION',      units:['ml','mg','units','mcg','cc'] },
     { k:'pill',      label:'PILL / CAPSULE', units:['capsule(s)','tablet(s)','mg','mcg','g'] },
     { k:'tablet',    label:'TABLET',         units:['tablet(s)','½ tablet','mg','mcg','g'] },
     { k:'liquid',    label:'LIQUID / SYRUP', units:['ml','tsp','tbsp','mg','fl oz'] },
-    { k:'injection', label:'INJECTION',      units:['ml','units','mg','mcg','cc'] },
     { k:'inhaler',   label:'INHALER',        units:['puff(s)','mcg','mg'] },
     { k:'drops',     label:'DROPS',          units:['drop(s)','ml'] },
-    { k:'cream',     label:'CREAM / OINT.',  units:['application','fingertip unit','g','cm strip'] },
+    { k:'cream',     label:'CREAM / GEL',    units:['application','pump(s)','fingertip unit','g','cm strip'] },
     { k:'patch',     label:'PATCH',          units:['patch','mcg/hr','mg/24hr'] },
     { k:'spray',     label:'NASAL SPRAY',    units:['spray(s)','spray each nostril','mcg'] },
     { k:'other',     label:'OTHER',          units:['dose','mg','ml','g','unit(s)','sachet','suppository'] }
   ];
   const typeOf = k => TYPES.find(t => t.k === k) || TYPES[TYPES.length - 1];
-  const PRESETS = [[60,'1H'],[240,'4H'],[360,'6H'],[480,'8H'],[720,'12H'],[1440,'24H'],[2880,'2 DAYS'],[10080,'WEEKLY']];
+  const PRESETS = [[60,'1H'],[240,'4H'],[360,'6H'],[480,'8H'],[720,'12H'],[1440,'24H'],[2880,'2 DAYS'],[5040,'3.5 DAYS'],[10080,'WEEKLY']];
+  const DAYN = ['SUN','MON','TUE','WED','THU','FRI','SAT'], DAYL = ['S','M','T','W','T','F','S'];
+  const DAY_PRESETS = [[[1,4],'MON + THU'],[[2,5],'TUE + FRI'],[[3,6],'WED + SAT'],[[0,3],'SUN + WED'],[[0,1,2,3,4,5,6],'EVERY DAY']];
+  const SITES = ['Left glute','Right glute','Left thigh','Right thigh','Left delt','Right delt','Left belly','Right belly'];
+  const GRACE = 6 * 3600000; // a dose given within 6h of a set-day slot counts for that slot
 
   // ---------- storage ----------
   const KEY = 'bitmeds.timers.v1', PREF = 'bitmeds.prefs.v1';
   let meds = [], prefs = { sound:true, alerts:false };
-  try { meds = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(e) { meds = []; }
+  function loadMeds(){
+    let raw = null;
+    if (NATIVE){ try { raw = NATIVE.load(); } catch(e) {} }
+    if (!raw){ try { raw = localStorage.getItem(KEY); } catch(e) {} }
+    try { meds = JSON.parse(raw || '[]'); } catch(e) { meds = []; }
+    if (!Array.isArray(meds)) meds = [];
+    meds.forEach(m => {
+      if (!m.sched) m.sched = 'interval';
+      if (!m.intervalMin) m.intervalMin = 480;
+      if (!m.periodStart) m.periodStart = m.nextAt - m.intervalMin * 60000;
+      if (!m.sites) m.sites = [];
+      if (!m.days) m.days = [];
+      if (!m.log) m.log = [];
+    });
+  }
+  loadMeds();
   try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREF) || '{}')); } catch(e) {}
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(meds)); } catch(e) {} };
+  const save = () => {
+    const s = JSON.stringify(meds);
+    try { localStorage.setItem(KEY, s); } catch(e) {}
+    if (NATIVE){ try { NATIVE.save(s); } catch(e) {} }
+  };
   const savePrefs = () => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch(e) {} };
+
+  // ---------- schedule math (mirrored in the Android app's Sched.java) ----------
+  function nextSlotAfter(m, t){
+    const [hh, mm] = (m.time || '20:00').split(':').map(Number);
+    const d = new Date(t); d.setHours(hh, mm, 0, 0);
+    for (let i = 0; i < 15; i++){
+      if (m.days.includes(d.getDay()) && d.getTime() > t) return d.getTime();
+      d.setDate(d.getDate() + 1); d.setHours(hh, mm, 0, 0);
+    }
+    return t + 7 * 86400000;
+  }
+  function nextAfterGiven(m, t){
+    if (m.sched === 'days') return nextSlotAfter(m, Math.max(t + GRACE, m.nextAt || 0));
+    return t + m.intervalMin * 60000;
+  }
 
   // ---------- helpers ----------
   const $ = id => document.getElementById(id);
@@ -312,13 +455,24 @@
   const pad = n => String(n).padStart(2, '0');
   function fmtLeft(ms){
     const s = Math.floor(Math.abs(ms) / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
-    return d > 0 ? `${d}D ${pad(h)}:${pad(m)}` : `${pad(h)}:${pad(m)}:${pad(x)}`;
+    return d > 0 ? `${d}D ${pad(h)}:${pad(m)}:${pad(x)}` : `${pad(h)}:${pad(m)}:${pad(x)}`;
   }
-  function fmtGap(min){
+  function fmtShort(ms){
+    const s = Math.floor(Math.abs(ms) / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+    return d > 0 ? `${d}D ${h}H` : h > 0 ? `${h}H ${pad(m)}M` : `${m}M ${pad(s % 60)}S`;
+  }
+  const fmtClock = (hm) => { const [h, m] = hm.split(':').map(Number); const d = new Date(); d.setHours(h, m, 0, 0); return d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }); };
+  function fmtSched(m){
+    if (m.sched === 'days'){
+      const ds = [...m.days].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+      const label = ds.length === 7 ? 'every day' : ds.map(d => DAYN[d][0] + DAYN[d].slice(1).toLowerCase()).join(' + ');
+      return `${label} · ${fmtClock(m.time)}`;
+    }
+    const min = m.intervalMin;
     if (min % 10080 === 0) return min === 10080 ? 'weekly' : `every ${min/10080} weeks`;
     if (min % 1440 === 0) return min === 1440 ? 'every 24 hours' : `every ${min/1440} days`;
-    const h = Math.floor(min / 60), m = min % 60;
-    return 'every ' + (h ? `${h}h` : '') + (h && m ? ' ' : '') + (m ? `${m}m` : '');
+    const h = Math.floor(min / 60), mi = min % 60;
+    return 'every ' + (h ? `${h}h` : '') + (h && mi ? ' ' : '') + (mi ? `${mi}m` : '');
   }
   function fmtWhen(ts){
     const d = new Date(ts), now = new Date(), t = d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
@@ -328,28 +482,39 @@
     if (day(d, now)) return `today ${t}`;
     if (day(d, tom)) return `tomorrow ${t}`;
     if (day(d, yest)) return `yesterday ${t}`;
+    if (Math.abs(d - now) < 6 * 86400000) return d.toLocaleDateString([], { weekday:'long' }) + ' ' + t;
     return d.toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' }) + ' ' + t;
   }
   const fmtAmt = n => (Math.round(n * 1000) / 1000).toString();
+  const doseLine = (m, plain) => {
+    const a = `${fmtAmt(m.amount)} ${m.unit}`;
+    return plain ? a + (m.strength ? ` (${m.strength})` : '') : `<b>${esc(a)}</b>${m.strength ? ' · ' + esc(m.strength) : ''}`;
+  };
+  const nextSite = m => m.sites && m.sites.length ? m.sites[(m.siteIdx || 0) % m.sites.length] : '';
+  const heroId = () => { const p = meds.find(m => m.pinned); if (p) return p.id; const s = [...meds].sort((a, b) => a.nextAt - b.nextAt)[0]; return s && s.id; };
 
   // ---------- sound + alerts ----------
   let actx = null;
-  function beep(){
+  function tone(seq, vol){
     if (!prefs.sound) return;
     try {
       actx = actx || new (window.AudioContext || window.webkitAudioContext)();
       if (actx.state === 'suspended') actx.resume();
-      [660, 880, 660, 990].forEach((f, i) => {
-        const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + i * 0.14;
+      seq.forEach(([f, at, dur]) => {
+        const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + at;
         o.type = 'square'; o.frequency.value = f;
-        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-        o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 0.13);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur + 0.01);
       });
     } catch(e) {}
   }
+  const beepDue = () => tone([[660,0,.12],[880,.14,.12],[660,.28,.12],[990,.42,.2]], .12);
+  const beepGive = () => tone([[523,0,.08],[659,.08,.08],[784,.16,.08],[1047,.24,.22]], .09);
   function notify(m){
+    if (NATIVE) return; // the Android app posts its own alarms
     if (!prefs.alerts || !('Notification' in window) || Notification.permission !== 'granted') return;
-    const body = `${doseLine(m, true)}${m.forWho ? ' for ' + m.forWho : ''}${m.desc ? ' — ' + m.desc : ''}`;
+    const site = nextSite(m);
+    const body = `${doseLine(m, true)}${site ? ' · site: ' + site : ''}${m.desc ? ' — ' + m.desc : ''}`;
     try { new Notification(`⏰ ${m.name} is due`, { body, tag: 'bitmeds-' + m.id, icon: 'icon-192.png' }); } catch(e) {}
   }
   function paintPrefs(){
@@ -357,7 +522,7 @@
     const granted = 'Notification' in window && Notification.permission === 'granted';
     $('alertBtn').classList.toggle('on', prefs.alerts && granted);
   }
-  $('soundBtn').onclick = () => { prefs.sound = !prefs.sound; savePrefs(); paintPrefs(); if (prefs.sound) beep(); };
+  $('soundBtn').onclick = () => { prefs.sound = !prefs.sound; savePrefs(); paintPrefs(); beepGive(); };
   $('alertBtn').onclick = async () => {
     if (!('Notification' in window)) { toast('This browser can’t show alerts — sound still works.'); return; }
     if (prefs.alerts) { prefs.alerts = false; savePrefs(); paintPrefs(); return; }
@@ -369,75 +534,217 @@
   };
 
   // ---------- rendering ----------
-  const doseLine = (m, plain) => {
-    const a = `${fmtAmt(m.amount)} ${m.unit}`;
-    return plain ? a + (m.strength ? ` (${m.strength})` : '') : `<b>${esc(a)}</b>${m.strength ? ' · ' + esc(m.strength) : ''}`;
-  };
-
-  function render(){
-    const grid = $('grid');
-    if (!meds.length){
-      grid.innerHTML = `<div class="empty">${sprite('clock', 64)}<p>NO TIMERS YET.<br>ADD YOUR FIRST MED BELOW ▼</p><button class="btn ghost" id="demoBtn">LOAD AN EXAMPLE</button></div>`;
-      $('demoBtn').onclick = loadDemo;
-      tick(); return;
-    }
-    const sorted = [...meds].sort((a, b) => a.nextAt - b.nextAt);
-    grid.innerHTML = sorted.map(m => `
-      <article class="card" data-id="${m.id}">
+  const fresh = new Set();
+  let firstPaint = true;
+  function cardHtml(m, i, hero){
+    const site = nextSite(m);
+    const segs = Array.from({length:24}, (_, j) => `<i style="--j:${j}"></i>`).join('');
+    const enter = firstPaint || fresh.has(m.id) ? ' enter' : '';
+    const clock = `<div class="clock">
+          <div class="lbl" data-f="lbl">NEXT DOSE IN</div>
+          <div class="t" data-f="t"></div>
+          <div class="at" data-f="at"></div>
+          <div class="segs" data-f="segs">${segs}</div>
+        </div>`;
+    return `
+      <article class="card${hero ? ' hero' : ''}${enter}" data-id="${m.id}" style="--i:${i};--sd:${(i * 0.9) % 4}s">
         <div class="top">
-          <div class="icon">${sprite(m.type, 50)}</div>
+          <div class="icon">${sprSpan(m.type, 48)}</div>
           <div class="who">
             <div class="name">${esc(m.name)}</div>
-            <div class="tag">${esc(typeOf(m.type).label)}${m.forWho ? ' · FOR ' + esc(m.forWho.toUpperCase()) : ''}</div>
-            <div class="dose">${doseLine(m)} · ${esc(fmtGap(m.intervalMin))}</div>
+            <div class="tag">${m.pinned ? '<span class="pin">★ </span>' : ''}${esc(typeOf(m.type).label)}${m.forWho ? ' · FOR ' + esc(m.forWho.toUpperCase()) : ''}</div>
+            <div class="dose">${doseLine(m)} · ${esc(fmtSched(m))}</div>
           </div>
+          ${hero ? '<span class="badge">MAIN</span>' : ''}
           <button class="more" data-act="menu" aria-label="More options">⋮</button>
           <div class="menu">
             <button data-act="edit">✎ EDIT</button>
+            <button data-act="pin">${m.pinned ? '☆ UNPIN' : '★ PIN AS MAIN'}</button>
             <button data-act="dup">⧉ DUPLICATE</button>
             <button class="danger" data-act="del">✕ DELETE</button>
           </div>
         </div>
         ${m.desc ? `<div class="desc">${esc(m.desc)}</div>` : ''}
-        <div class="clock">
-          <div class="lbl" data-f="lbl">NEXT DOSE IN</div>
-          <div class="t" data-f="t">--:--:--</div>
-          <div class="at" data-f="at"></div>
-          <div class="segs" data-f="segs">${'<i></i>'.repeat(12)}</div>
-        </div>
+        ${hero ? `<div class="hero-body"><div class="ring"><canvas></canvas>${sprSpan(m.type, 72)}</div>${clock}</div>` : clock}
+        ${site ? `<div class="site"><span class="k">NEXT SITE ▸</span><b>${esc(site)}</b>${m.lastSite ? `<small>last: ${esc(m.lastSite)}</small>` : ''}</div>` : ''}
         <button class="reset" data-act="reset">↺ GAVE IT · RESET</button>
+        ${hero && NATIVE ? '<button class="widgetbtn" data-act="widget">＋ ADD THIS TO HOME SCREEN</button>' : ''}
         <div class="last">${m.log && m.log.length ? 'Last given ' + esc(fmtWhen(m.log[0])) : 'Not given yet'}</div>
-      </article>`).join('');
+      </article>`;
+  }
+
+  function render(){
+    const grid = $('grid');
+    if (!meds.length){
+      grid.innerHTML = `<div class="empty">${sprSpan('injection', 72)}<p>NO TIMERS YET.<br>ADD YOUR FIRST MED BELOW ▼</p><button class="btn ghost" id="demoBtn">LOAD AN EXAMPLE</button></div>`;
+      $('demoBtn').onclick = loadDemo;
+      tick(); return;
+    }
+    const hid = heroId();
+    const sorted = [...meds].sort((a, b) => (b.id === hid) - (a.id === hid) || a.nextAt - b.nextAt);
+    grid.innerHTML = sorted.map((m, i) => cardHtml(m, i, m.id === hid)).join('');
+    firstPaint = false; fresh.clear();
     tick();
   }
+
+  function setDigits(el, str){
+    if (el.dataset.v === str) return;
+    const old = el.dataset.v || '';
+    if (old.length !== str.length){ el.innerHTML = [...str].map(c => `<span>${c === ' ' ? '&nbsp;' : esc(c)}</span>`).join(''); }
+    else {
+      [...str].forEach((c, i) => {
+        if (old[i] === c) return;
+        const s = el.children[i]; s.textContent = c === ' ' ? ' ' : c;
+        if (!RM){ s.classList.remove('roll'); void s.offsetWidth; s.classList.add('roll'); }
+      });
+    }
+    el.dataset.v = str;
+  }
+
+  const fracOf = (m, now) => { const span = Math.max(60000, m.nextAt - (m.periodStart || m.nextAt - 3600000)); const left = m.nextAt - now; return left <= 0 ? 1 : Math.max(0, Math.min(1, 1 - left / span)); };
+  const isSoon = (m, left) => left > 0 && left <= Math.min(30 * 60000, (m.nextAt - (m.periodStart || 0)) * 0.1);
 
   function tick(){
     const now = Date.now();
     let due = 0, next = null, today = 0;
     const sod = new Date(); sod.setHours(0,0,0,0);
+    let dirty = false;
     meds.forEach(m => {
-      const left = m.nextAt - now, span = m.intervalMin * 60000;
+      const left = m.nextAt - now;
       (m.log || []).forEach(t => { if (t >= sod.getTime()) today++; });
       if (left <= 0) due++; else if (!next || m.nextAt < next.nextAt) next = m;
-      // fire once per due time
-      if (left <= 0 && m.alertedFor !== m.nextAt){ m.alertedFor = m.nextAt; save(); beep(); notify(m); }
+      if (left <= 0 && m.alertedFor !== m.nextAt){ m.alertedFor = m.nextAt; dirty = true; beepDue(); notify(m); }
       const card = document.querySelector(`.card[data-id="${m.id}"]`);
       if (!card) return;
       card.classList.toggle('due', left <= 0);
-      card.classList.toggle('soon', left > 0 && left <= Math.min(15 * 60000, span * 0.1));
-      card.querySelector('[data-f=lbl]').textContent = left <= 0 ? 'DUE NOW · OVERDUE BY' : 'NEXT DOSE IN';
-      card.querySelector('[data-f=t]').textContent = (left <= 0 ? '+' : '') + fmtLeft(left);
+      card.classList.toggle('soon', isSoon(m, left));
+      card.querySelector('[data-f=lbl]').textContent = left <= 0 ? '⚠ DUE NOW · OVERDUE BY' : 'NEXT DOSE IN';
+      setDigits(card.querySelector('[data-f=t]'), (left <= 0 ? '+' : '') + fmtLeft(left));
       card.querySelector('[data-f=at]').textContent = (left <= 0 ? 'was due ' : 'due ') + fmtWhen(m.nextAt);
-      const frac = left <= 0 ? 1 : Math.max(0, Math.min(1, 1 - left / span));
-      const filled = Math.round(frac * 12);
-      card.querySelectorAll('.segs i').forEach((s, i) => s.classList.toggle('f', i < filled));
+      const filled = Math.round(fracOf(m, now) * 24);
+      card.querySelectorAll('.segs i').forEach((s, i) => { s.classList.toggle('f', i < filled); s.classList.toggle('h', left > 0 && i === filled - 1 && Math.floor(now / 1000) % 2 === 0); });
     });
-    $('hudMeds').textContent = meds.length;
-    $('hudDue').textContent = due;
-    $('hudToday').textContent = today;
-    $('hudNext').textContent = next ? fmtLeft(next.nextAt - now) : '—';
+    if (dirty) save();
+    const setHud = (id, v) => { const el = $(id); if (el.textContent !== String(v)){ el.textContent = v; if (!RM){ el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); } } };
+    setHud('hudMeds', meds.length); setHud('hudDue', due); setHud('hudToday', today);
+    $('hudNext').textContent = next ? fmtShort(next.nextAt - now) : '—';
+    $('hudDueBox').classList.toggle('hot', due > 0);
     document.title = due ? `(${due}) DOSE DUE — bitmeds` : 'bitmeds — Dose Timers';
   }
+
+  // ---------- animated sprites (idle drip + plunger push) ----------
+  let frame = 0; const plays = new Map(); // id -> start time of a plunger animation
+  setInterval(() => {
+    frame++;
+    document.querySelectorAll('.spr[data-key="injection"]').forEach(el => {
+      const card = el.closest('.card'); const id = card && card.dataset.id; const size = +el.dataset.size;
+      let f = 6, drip = [0,0,0,0,0,0,1,1,2,2,3,0][frame % 12];
+      const p = id && plays.get(id);
+      if (p){
+        const k = (Date.now() - p) / 1000;
+        if (k < 0.9){ f = Math.max(0, 6 - Math.floor(k / 0.13)); drip = f < 3 ? 2 : 1; }
+        else if (k < 1.7){ f = Math.min(6, Math.floor((k - 0.9) / 0.11)); drip = 0; }
+        else plays.delete(id);
+      }
+      if (RM){ f = 6; drip = 0; }
+      const sig = f + ':' + drip;
+      if (el.dataset.sig !== sig){ el.dataset.sig = sig; el.innerHTML = rowsSvg(syringeRows(f, drip), size); }
+    });
+  }, 110);
+
+  // ---------- canvases: starfield, rings, particles ----------
+  const stars = $('stars'), sctx = stars.getContext('2d'), fx = $('fx'), fctx = fx.getContext('2d');
+  let W = 0, H = 0, DPR = 1, starList = [], parts = [];
+  function resize(){
+    DPR = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+    [stars, fx].forEach(c => { c.width = W * DPR; c.height = H * DPR; });
+    starList = Array.from({length: Math.round(W * H / 9000)}, () => ({ x: Math.random() * W, y: Math.random() * H, z: Math.random() * 0.8 + 0.2, p: Math.random() * 6.28 }));
+  }
+  resize(); addEventListener('resize', resize);
+  // ring is rasterised on a 48x48 pixel grid, then scaled up with no smoothing so it stays crisp pixel art
+  const RG = 48, ringBuf = document.createElement('canvas'); ringBuf.width = ringBuf.height = RG;
+  const rbx = ringBuf.getContext('2d'), rimg = rbx.createImageData(RG, RG);
+  const hex = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+  const RC = { pill:[hex('#34d399'), hex('#6ee7b7'), hex('#047857')], yellow:[hex('#facc15'), hex('#fde68a'), hex('#a16207')],
+               red:[hex('#ff5d5d'), hex('#ffa3a3'), hex('#991b1b')], track:[hex('#24244a'), hex('#2f2f5c'), hex('#15152e')], dim:[hex('#4a1f2a'), hex('#5c2633'), hex('#2a1018')] };
+  function drawRing(cv, m, now){
+    const s = cv.clientWidth; if (!s) return;
+    const px = Math.round(s * DPR); if (cv.width !== px){ cv.width = cv.height = px; }
+    const left = m.nextAt - now, frac = fracOf(m, now), dueNow = left <= 0;
+    const tone = dueNow ? 'red' : isSoon(m, left) ? 'yellow' : 'pill';
+    const N = 36, filled = Math.floor(frac * N), blink = Math.floor(now / 300) % 2, chase = Math.floor(now / 70);
+    const d = rimg.data, c0 = (RG - 1) / 2, rOut = 22.5, rIn = 17.5;
+    for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
+      const i = (y * RG + x) * 4, dx = x - c0, dy = y - c0, dist = Math.sqrt(dx * dx + dy * dy);
+      d[i + 3] = 0;
+      if (dist < rIn || dist > rOut) continue;
+      let t = (Math.atan2(dy, dx) + Math.PI / 2) / (Math.PI * 2); t = (t + 1) % 1;
+      const seg = Math.floor(t * N), within = (t * N) % 1;
+      if (within > 0.74) continue;                       // gap between blocks
+      let pal = RC.track;
+      if (dueNow) pal = ((seg - chase) % N + N) % N < 9 ? RC.red : RC.dim;
+      else if (seg < filled) pal = RC[tone];
+      else if (seg === filled) pal = blink ? RC[tone] : RC.track;
+      const shade = dist > rOut - 1.2 ? 1 : dist < rIn + 1.2 ? 2 : 0; // bevel: light outer edge, dark inner edge
+      const col = pal[shade];
+      d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = 255;
+    }
+    if (!RM && !dueNow){ // orbiting spark inside the ring
+      const a = -Math.PI / 2 + (now / 2400) % 1 * Math.PI * 2;
+      const sx = Math.round(c0 + Math.cos(a) * 14.5), sy = Math.round(c0 + Math.sin(a) * 14.5);
+      [[0,0],[1,0],[0,1],[1,1]].forEach(([ox, oy]) => { const i = ((sy + oy) * RG + sx + ox) * 4; d[i] = 244; d[i + 1] = 241; d[i + 2] = 255; d[i + 3] = 200; });
+    }
+    rbx.putImageData(rimg, 0, 0);
+    const c = cv.getContext('2d'); c.clearRect(0, 0, px, px); c.imageSmoothingEnabled = false;
+    c.globalAlpha = 0.55; c.drawImage(ringBuf, px / RG * 0.9, px / RG * 0.9, px, px); // drop shadow
+    c.globalCompositeOperation = 'source-atop'; c.fillStyle = '#000'; c.fillRect(0, 0, px, px); c.globalCompositeOperation = 'source-over';
+    c.globalAlpha = 1; c.drawImage(ringBuf, 0, 0, px, px);
+    if (!RM){ // soft glow at the leading block
+      const segA = -Math.PI / 2 + (dueNow ? (chase % N) + 4 : filled + 0.4) / N * Math.PI * 2;
+      const gx = px / 2 + Math.cos(segA) * px * 0.42, gy = px / 2 + Math.sin(segA) * px * 0.42;
+      const g = c.createRadialGradient(gx, gy, 0, gx, gy, px * 0.14);
+      const rgb = RC[tone][0].join(',');
+      g.addColorStop(0, `rgba(${rgb},${dueNow || blink ? 0.45 : 0.2})`); g.addColorStop(1, `rgba(${rgb},0)`);
+      c.fillStyle = g; c.fillRect(0, 0, px, px);
+    }
+  }
+  function burst(x, y, palette, n){
+    if (RM) return;
+    for (let i = 0; i < n; i++){
+      const a = Math.random() * Math.PI * 2, v = 2 + Math.random() * 7;
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 4, s: 3 + Math.floor(Math.random() * 4), c: palette[i % palette.length], life: 1, d: 0.012 + Math.random() * 0.02 });
+    }
+  }
+  function floater(x, y, text, color){
+    if (RM) return;
+    const el = document.createElement('div'); el.className = 'floater'; el.textContent = text;
+    el.style.left = x + 'px'; el.style.top = y + 'px'; if (color) el.style.color = color;
+    document.body.appendChild(el); setTimeout(() => el.remove(), 1400);
+  }
+  function loop(now){
+    if (!document.hidden){
+      sctx.setTransform(DPR, 0, 0, DPR, 0, 0); sctx.clearRect(0, 0, W, H);
+      starList.forEach(s => {
+        if (!RM){ s.y -= s.z * 0.12; if (s.y < -4){ s.y = H + 4; s.x = Math.random() * W; } }
+        const tw = RM ? 0.6 : 0.35 + 0.65 * Math.abs(Math.sin(now / 900 * s.z + s.p));
+        sctx.fillStyle = s.z > 0.75 ? `rgba(52,211,153,${tw * 0.8})` : `rgba(167,139,250,${tw * 0.5})`;
+        const sz = s.z > 0.75 ? 3 : 2; sctx.fillRect(Math.round(s.x), Math.round(s.y), sz, sz);
+      });
+      const t = Date.now();
+      document.querySelectorAll('.ring canvas').forEach(cv => { const m = meds.find(x => x.id === cv.closest('.card').dataset.id); if (m) drawRing(cv, m, t); });
+      fctx.setTransform(DPR, 0, 0, DPR, 0, 0); fctx.clearRect(0, 0, W, H);
+      parts = parts.filter(p => p.life > 0);
+      parts.forEach(p => {
+        p.vy += 0.32; p.vx *= 0.985; p.x += p.vx; p.y += p.vy; p.life -= p.d;
+        fctx.globalAlpha = Math.max(0, Math.ceil(p.life * 4) / 4);
+        fctx.fillStyle = '#000'; fctx.fillRect(Math.round(p.x) + 2, Math.round(p.y) + 2, p.s, p.s);
+        fctx.fillStyle = p.c; fctx.fillRect(Math.round(p.x), Math.round(p.y), p.s, p.s);
+      });
+      fctx.globalAlpha = 1;
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
 
   // ---------- card actions ----------
   let undoSnap = null, toastTimer = null;
@@ -454,37 +761,49 @@
   };
   const snap = () => JSON.parse(JSON.stringify(meds));
 
+  function giveDose(m, btn){
+    undoSnap = snap();
+    const now = Date.now();
+    m.log = [now, ...(m.log || [])].slice(0, 60);
+    if (m.sites && m.sites.length){ m.lastSite = nextSite(m); m.siteIdx = ((m.siteIdx || 0) + 1) % m.sites.length; }
+    m.nextAt = nextAfterGiven(m, now);
+    m.periodStart = now;
+    m.snoozeAt = null;
+    save();
+    const r = btn.getBoundingClientRect();
+    burst(r.left + r.width / 2, r.top + r.height / 2, ['#34d399','#facc15','#a78bfa','#f4f1ff','#047857'], 70);
+    floater(r.left + r.width / 2, r.top - 8, '+1 DOSE LOGGED');
+    if (NATIVE){ try { NATIVE.haptic(); } catch(e) {} } else if (navigator.vibrate) navigator.vibrate(30);
+    plays.set(m.id, Date.now());
+    render(); beepGive();
+    const card = document.querySelector(`.card[data-id="${m.id}"]`);
+    if (card && !RM){ card.classList.add('just'); setTimeout(() => card.classList.remove('just'), 900); }
+    toast(`${m.name} given. Next ${fmtWhen(m.nextAt)}${nextSite(m) ? ' · ' + nextSite(m) : ''}.`, true);
+  }
+
   $('grid').addEventListener('click', e => {
     const btn = e.target.closest('[data-act]'); if (!btn) return;
     const card = btn.closest('.card'); const m = meds.find(x => x.id === card.dataset.id); if (!m) return;
     const act = btn.dataset.act;
     if (act !== 'menu') document.querySelectorAll('.menu.open').forEach(x => x.classList.remove('open'));
     if (act === 'menu'){ e.stopPropagation(); const mn = card.querySelector('.menu'); const was = mn.classList.contains('open'); document.querySelectorAll('.menu.open').forEach(x => x.classList.remove('open')); if (!was) mn.classList.add('open'); return; }
-    if (act === 'reset'){
-      undoSnap = snap();
-      const now = Date.now();
-      m.log = [now, ...(m.log || [])].slice(0, 50);
-      m.nextAt = now + m.intervalMin * 60000;
-      save(); render(); beepConfirm();
-      toast(`${m.name} given. Next ${fmtWhen(m.nextAt)}.`, true);
-    }
+    if (act === 'reset') giveDose(m, btn);
     if (act === 'edit') startEdit(m);
-    if (act === 'dup'){ undoSnap = snap(); meds.push({ ...JSON.parse(JSON.stringify(m)), id: uid(), name: m.name + ' (copy)', log: [] }); save(); render(); toast('Duplicated.', true); }
+    if (act === 'widget'){ let ok = false; try { ok = NATIVE.pinWidget(m.id); } catch(e) {} if (!ok) toast('Long-press your home screen → Widgets → bitmeds.'); }
+    if (act === 'pin'){ const was = m.pinned; meds.forEach(x => x.pinned = false); m.pinned = !was; save(); firstPaint = true; render(); toast(m.pinned ? `${m.name} is your main timer.` : 'Unpinned.'); }
+    if (act === 'dup'){ undoSnap = snap(); const c = { ...JSON.parse(JSON.stringify(m)), id: uid(), name: m.name + ' (copy)', log: [], pinned: false }; meds.push(c); fresh.add(c.id); save(); render(); toast('Duplicated.', true); }
     if (act === 'del'){ undoSnap = snap(); meds = meds.filter(x => x.id !== m.id); save(); render(); toast(`${m.name} deleted.`, true); if (editing === m.id) stopEdit(); }
   });
   document.addEventListener('click', e => { if (!e.target.closest('.menu,[data-act=menu]')) document.querySelectorAll('.menu.open').forEach(x => x.classList.remove('open')); });
-  function beepConfirm(){
-    if (!prefs.sound) return;
-    try {
-      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-      [523, 784].forEach((f, i) => { const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + i * 0.09; o.type = 'square'; o.frequency.value = f; g.gain.setValueAtTime(0.08, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08); o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 0.09); });
-    } catch(e) {}
-  }
 
   // ---------- form ----------
-  let selType = 'pill', editing = null;
+  let selType = 'injection', editing = null, sched = 'days', selDays = [1,4], selSites = [];
   function paintTypes(){
-    $('types').innerHTML = TYPES.map(t => `<button type="button" class="type${t.k === selType ? ' sel' : ''}" data-k="${t.k}">${sprite(t.k, 44)}${t.label}</button>`).join('');
+    $('types').innerHTML = TYPES.map(t => `<button type="button" class="type${t.k === selType ? ' sel' : ''}" data-k="${t.k}">${sprSpan(t.k, 44)}${t.label}</button>`).join('');
+    const inj = selType === 'injection';
+    $('sitesStep').style.display = inj ? '' : 'none';
+    $('startStep').textContent = (inj ? 6 : 5) + ' · WHERE ARE YOU NOW?';
+    $('descStep').textContent = (inj ? 7 : 6) + " · DESCRIPTION — WHAT YOU'RE GIVING";
   }
   function paintUnits(keep){
     const units = typeOf(selType).units;
@@ -496,6 +815,25 @@
     const b = e.target.closest('.type'); if (!b) return;
     selType = b.dataset.k; paintTypes(); paintUnits();
   });
+  function paintSched(){
+    $('schedTog').querySelectorAll('button').forEach(b => b.classList.toggle('sel', b.dataset.s === sched));
+    $('daysPanel').style.display = sched === 'days' ? '' : 'none';
+    $('intPanel').style.display = sched === 'interval' ? '' : 'none';
+    const key = [...selDays].sort().join(',');
+    $('dayPresets').innerHTML = DAY_PRESETS.map(([d, l]) => `<button type="button" data-d="${d.join(',')}" class="${[...d].sort().join(',') === key ? 'sel' : ''}">${l}</button>`).join('');
+    $('days').innerHTML = [1,2,3,4,5,6,0].map(d => `<button type="button" data-day="${d}" class="${selDays.includes(d) ? 'sel' : ''}" aria-label="${DAYN[d]}">${DAYL[d]}</button>`).join('');
+    const ex = { sched:'days', days:selDays, time: $('fTime').value || '20:00' };
+    $('daysHint').innerHTML = selDays.length ? `Next one: <b>${esc(fmtWhen(nextSlotAfter(ex, Date.now())))}</b>` : 'Pick at least one day.';
+    paintStart();
+  }
+  $('schedTog').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; sched = b.dataset.s; paintSched(); });
+  $('dayPresets').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; selDays = b.dataset.d.split(',').map(Number); paintSched(); });
+  $('days').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; const d = +b.dataset.day; selDays = selDays.includes(d) ? selDays.filter(x => x !== d) : [...selDays, d]; paintSched(); });
+  $('fTime').addEventListener('input', paintSched);
+  function paintSites(){
+    $('sites').innerHTML = SITES.map(s => { const i = selSites.indexOf(s); return `<button type="button" data-site="${esc(s)}" class="${i >= 0 ? 'sel' : ''}">${i >= 0 ? `<span class="n">${i + 1}</span>` : ''}${esc(s.toUpperCase())}</button>`; }).join('');
+  }
+  $('sites').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; const s = b.dataset.site; selSites = selSites.includes(s) ? selSites.filter(x => x !== s) : [...selSites, s]; paintSites(); });
   function paintPresets(){
     const cur = (+$('fH').value || 0) * 60 + (+$('fM').value || 0);
     $('presets').innerHTML = PRESETS.map(([m, l]) => `<button type="button" data-m="${m}" class="${m === cur ? 'sel' : ''}">${l}</button>`).join('');
@@ -505,82 +843,119 @@
     const m = +b.dataset.m; $('fH').value = Math.floor(m / 60); $('fM').value = m % 60; paintPresets();
   });
   ['fH','fM'].forEach(id => $(id).addEventListener('input', paintPresets));
+  function paintStart(){
+    const cur = $('fStart').value;
+    const opts = [];
+    if (editing) opts.push(['keep', 'Keep the current timer']);
+    if (sched === 'days'){
+      opts.push(['sched', 'Waiting for the next scheduled dose']);
+      opts.push(['now', 'Just gave a dose now']);
+      opts.push(['due', 'Due right now — haven’t given it yet']);
+    } else {
+      opts.push(['now', 'Just gave a dose — count down from now']);
+      opts.push(['at', 'Next dose is due at a set time']);
+      opts.push(['due', 'Due right now — haven’t given it yet']);
+    }
+    $('fStart').innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+    if (opts.some(o => o[0] === cur)) $('fStart').value = cur;
+    $('atWrap').style.display = $('fStart').value === 'at' ? '' : 'none';
+  }
   $('fStart').addEventListener('change', () => {
     $('atWrap').style.display = $('fStart').value === 'at' ? '' : 'none';
     if ($('fStart').value === 'at' && !$('fAt').value){ const d = new Date(Date.now() + 3600000); $('fAt').value = `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
   });
 
   function resetForm(){
-    $('form').reset(); selType = 'pill'; paintTypes(); paintUnits();
-    $('fAmt').value = 1; $('fH').value = 8; $('fM').value = 0; $('atWrap').style.display = 'none';
-    $('err').textContent = ''; paintPresets();
+    $('form').reset(); selType = 'injection'; sched = 'days'; selDays = [1,4]; selSites = [];
+    paintTypes(); paintUnits(); paintSites();
+    $('fAmt').value = 1; $('fH').value = 8; $('fM').value = 0; $('fTime').value = '20:00'; $('atWrap').style.display = 'none';
+    $('err').textContent = ''; paintPresets(); paintSched();
   }
   function startEdit(m){
-    editing = m.id; selType = m.type; paintTypes(); paintUnits(m.unit);
+    editing = m.id; selType = m.type; sched = m.sched || 'interval';
+    selDays = m.days && m.days.length ? [...m.days] : [1,4]; selSites = [...(m.sites || [])];
+    paintTypes(); paintUnits(m.unit); paintSites();
     $('fName').value = m.name; $('fFor').value = m.forWho || ''; $('fAmt').value = m.amount; $('fStr').value = m.strength || '';
-    $('fH').value = Math.floor(m.intervalMin / 60); $('fM').value = m.intervalMin % 60; paintPresets();
+    $('fH').value = Math.floor((m.intervalMin || 480) / 60); $('fM').value = (m.intervalMin || 480) % 60; paintPresets();
+    $('fTime').value = m.time || '20:00';
     $('fDesc').value = m.desc || '';
-    $('fStart').innerHTML = `<option value="keep">Keep the current timer</option><option value="now">Just gave a dose — count down from now</option><option value="at">Next dose is due at a set time</option><option value="due">Due right now</option>`;
-    $('fStart').value = 'keep'; $('atWrap').style.display = 'none';
+    paintSched(); $('fStart').value = 'keep'; $('atWrap').style.display = 'none';
     $('formTitle').textContent = '▸ EDIT MED'; $('saveBtn').textContent = '✓ SAVE CHANGES'; $('cancelBtn').style.display = '';
-    $('addmed').scrollIntoView({ behavior:'smooth', block:'start' });
+    $('addmed').scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block:'start' });
   }
   function stopEdit(){
     editing = null;
-    $('fStart').innerHTML = `<option value="now">Just gave a dose — count down from now</option><option value="at">Next dose is due at a set time</option><option value="due">Due right now — I haven't given it yet</option>`;
     $('formTitle').textContent = '▸ ADD A MED'; $('saveBtn').textContent = '+ ADD TIMER'; $('cancelBtn').style.display = 'none';
     resetForm();
   }
   $('cancelBtn').onclick = stopEdit;
+  function fail(msg){ const e = $('err'); e.textContent = msg; e.classList.remove('shake'); void e.offsetWidth; e.classList.add('shake'); }
 
   $('form').addEventListener('submit', e => {
     e.preventDefault();
     const name = $('fName').value.trim(), amount = parseFloat($('fAmt').value);
     const intervalMin = (parseInt($('fH').value, 10) || 0) * 60 + (parseInt($('fM').value, 10) || 0);
-    if (!name) return $('err').textContent = 'Give the med a name.';
-    if (!(amount > 0)) return $('err').textContent = 'Amount needs to be more than 0.';
-    if (intervalMin < 1) return $('err').textContent = 'Set how long between doses (at least 1 minute).';
+    const time = $('fTime').value || '20:00';
+    if (!name) return fail('Give the med a name.');
+    if (!(amount > 0)) return fail('Amount needs to be more than 0.');
+    if (sched === 'interval' && intervalMin < 1) return fail('Set how long between doses (at least 1 minute).');
+    if (sched === 'days' && !selDays.length) return fail('Pick at least one day.');
     const now = Date.now(), start = $('fStart').value;
-    let nextAt, log;
     const existing = editing && meds.find(x => x.id === editing);
+    const rec = { ...(existing || {}), id: editing || uid(), type: selType, name, forWho: $('fFor').value.trim(), amount, unit: $('fUnit').value,
+                  strength: $('fStr').value.trim(), desc: $('fDesc').value.trim(),
+                  sched, intervalMin: intervalMin || 480, days: [...selDays], time,
+                  sites: selType === 'injection' ? [...selSites] : [], log: existing ? existing.log || [] : [] };
+    if (!existing) rec.siteIdx = 0;
+    if (!(rec.siteIdx < rec.sites.length)) rec.siteIdx = 0;
     if (start === 'keep' && existing){
-      nextAt = existing.log && existing.log[0] ? existing.log[0] + intervalMin * 60000 : existing.nextAt;
-    } else if (start === 'now'){ nextAt = now + intervalMin * 60000; }
-    else if (start === 'due'){ nextAt = now; }
+      const last = rec.log[0];
+      if (sched === 'days'){ rec.nextAt = last ? nextSlotAfter(rec, last + GRACE) : nextSlotAfter(rec, now); rec.periodStart = last || now; }
+      else { rec.nextAt = last ? last + intervalMin * 60000 : existing.nextAt; rec.periodStart = last || existing.periodStart || now; }
+    } else if (start === 'now'){
+      rec.log = [now, ...rec.log].slice(0, 60); rec.periodStart = now;
+      rec.nextAt = sched === 'days' ? nextSlotAfter(rec, now + GRACE) : now + intervalMin * 60000;
+      if (rec.sites.length){ rec.lastSite = rec.sites[rec.siteIdx || 0]; rec.siteIdx = ((rec.siteIdx || 0) + 1) % rec.sites.length; }
+    } else if (start === 'due'){ rec.nextAt = now; rec.periodStart = now - 60000; rec.alertedFor = null; }
+    else if (start === 'sched'){ rec.nextAt = nextSlotAfter(rec, now); rec.periodStart = rec.log[0] || now; }
     else {
       const [h, mi] = ($('fAt').value || '').split(':').map(Number);
-      if (isNaN(h)) return $('err').textContent = 'Pick the time the next dose is due.';
+      if (isNaN(h)) return fail('Pick the time the next dose is due.');
       const d = new Date(); d.setHours(h, mi, 0, 0); if (d.getTime() <= now) d.setDate(d.getDate() + 1);
-      nextAt = d.getTime();
+      rec.nextAt = d.getTime(); rec.periodStart = rec.nextAt - intervalMin * 60000;
     }
-    log = existing ? existing.log || [] : [];
-    if (start === 'now') log = [now, ...log].slice(0, 50);
-    const rec = { id: editing || uid(), type: selType, name, forWho: $('fFor').value.trim(), amount, unit: $('fUnit').value,
-                  strength: $('fStr').value.trim(), intervalMin, desc: $('fDesc').value.trim(), nextAt, log,
-                  alertedFor: start === 'due' ? null : (existing ? existing.alertedFor : null) };
     undoSnap = snap();
-    if (existing) meds = meds.map(x => x.id === editing ? rec : x); else meds.push(rec);
+    if (existing) meds = meds.map(x => x.id === editing ? rec : x); else { meds.push(rec); fresh.add(rec.id); }
+    if (!existing && meds.length === 1) rec.pinned = true;
     save(); const was = !!existing; stopEdit(); render();
     toast(was ? `${rec.name} updated.` : `${rec.name} timer added.`, true);
-    $('grid').scrollIntoView({ behavior:'smooth', block:'start' });
+    const btn = $('saveBtn').getBoundingClientRect();
+    burst(btn.left + btn.width / 2, btn.top, ['#34d399','#f4f1ff','#facc15'], 40);
+    $('grid').scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block:'start' });
   });
 
   function loadDemo(){
     const now = Date.now(), H = 3600000;
-    meds = [
-      { id: uid(), type:'liquid', name:'Amoxicillin', forWho:'Harlow', amount:5, unit:'ml', strength:'250 mg / 5 ml', intervalMin:480, desc:'Pink liquid — shake well, give with food. Finish the whole bottle.', nextAt: now + 2.6*H, log:[now - 5.4*H] },
-      { id: uid(), type:'pill', name:'Ibuprofen', forWho:'', amount:2, unit:'tablet(s)', strength:'200 mg', intervalMin:360, desc:'Orange tablets with water. No more than 6 in 24h.', nextAt: now + 9*60000, log:[now - 5.85*H] },
-      { id: uid(), type:'injection', name:'Insulin (long-acting)', forWho:'', amount:12, unit:'units', strength:'', intervalMin:1440, desc:'Pen in the fridge door. Rotate sites — left side tonight.', nextAt: now - 4*60000, alertedFor: now - 4*60000, log:[now - 24.07*H] },
-      { id: uid(), type:'inhaler', name:'Albuterol', forWho:'Zayn', amount:2, unit:'puff(s)', strength:'90 mcg', intervalMin:240, desc:'Blue inhaler + spacer. Shake, wait 1 min between puffs.', nextAt: now + 3.2*H, log:[now - 0.8*H] }
-    ];
-    save(); render();
+    const t = { id: uid(), type:'injection', name:'Testosterone', forWho:'', amount:0.5, unit:'ml', strength:'200 mg/ml · 100 mg', desc:'Swab vial + site. Room-temp oil, draw slowly.',
+                sched:'days', days:[1,4], time:'20:00', intervalMin:5040, sites:['Left glute','Right glute','Left thigh','Right thigh'], siteIdx:1, lastSite:'Left glute', pinned:true };
+    t.log = [now - 30 * H]; t.periodStart = t.log[0]; t.nextAt = nextSlotAfter(t, t.log[0] + GRACE);
+    meds = [t,
+      { id: uid(), type:'pill', name:'Vitamin D', forWho:'', amount:1, unit:'capsule(s)', strength:'2000 IU', sched:'interval', intervalMin:1440, days:[], time:'08:00', desc:'With breakfast.', sites:[], nextAt: now + 9*60000, periodStart: now + 9*60000 - 1440*60000, log:[now - 23.85*H] }];
+    firstPaint = true; save(); render();
   }
 
   // ---------- boot ----------
-  $('logoMark').innerHTML = sprite('pill', 26);
-  paintTypes(); paintUnits(); paintPresets(); paintPrefs(); render();
+  if (NATIVE){
+    $('alertBtn').style.display = 'none';
+    $('logoLink').removeAttribute('href');
+    $('foot').innerHTML = 'Saved on this phone. Alarms ring even when bitmeds is closed.<br>bitmeds is a reminder, not medical advice — follow your doctor or pharmacist\'s directions.';
+  }
+  window.bitmedsReload = () => { loadMeds(); render(); };
+  window.bitmedsEdit = id => { const m = meds.find(x => x.id === id); if (m) startEdit(m); };
+  $('logoMark').innerHTML = sprite('injection', 26);
+  resetForm(); paintPrefs(); render();
   setInterval(tick, 1000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden){ loadMeds(); render(); } });
 })();
 </script>
 </body>
