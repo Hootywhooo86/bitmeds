@@ -26,6 +26,20 @@ final class Store {
 
     static synchronized void save(Context c, JSONArray meds) { saveRaw(c, meds.toString()); }
 
+    /** Non-med data from the app (settings, trip, labs, profiles) — used here for reminder settings + the trip alarm. */
+    static String rawExtra(Context c) { return prefs(c).getString("extra", ""); }
+
+    static synchronized void saveExtraRaw(Context c, String json) { prefs(c).edit().putString("extra", json).commit(); }
+
+    static JSONObject extra(Context c) {
+        try { return new JSONObject(prefs(c).getString("extra", "{}")); } catch (JSONException e) { return new JSONObject(); }
+    }
+
+    static JSONObject settings(Context c) {
+        JSONObject s = extra(c).optJSONObject("settings");
+        return s != null ? s : new JSONObject();
+    }
+
     static JSONObject find(JSONArray meds, String id) {
         if (id == null) return null;
         for (int i = 0; i < meds.length(); i++) {

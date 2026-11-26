@@ -23,6 +23,9 @@ import java.lang.ref.WeakReference;
 public class MainActivity extends Activity {
     private static WeakReference<MainActivity> live = new WeakReference<>(null);
     private WebView web;
+    private static final int REQ_OPEN = 41, REQ_SAVE = 42;
+    private android.webkit.ValueCallback<android.net.Uri[]> fileCb;
+    private String pendingSave;
     private boolean resumed;
 
     @Override protected void onCreate(Bundle state) {
@@ -37,6 +40,16 @@ public class MainActivity extends Activity {
         s.setDomStorageEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         web.setWebViewClient(new WebViewClient());
+        // file picker for "restore backup" (<input type=file>)
+        web.setWebChromeClient(new android.webkit.WebChromeClient() {
+            @Override public boolean onShowFileChooser(WebView w, android.webkit.ValueCallback<android.net.Uri[]> cb, FileChooserParams params) {
+                if (fileCb != null) fileCb.onReceiveValue(null);
+                fileCb = cb;
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*");
+                try { startActivityForResult(i, REQ_OPEN); } catch (Exception e) { fileCb = null; return false; }
+                return true;
+            }
+        });
         web.addJavascriptInterface(new Bridge(), "BitmedsAndroid");
         // Always keep content clear of the status bar / notch / nav bar AND the keyboard. WebView padding doesn't
         // move its content, so the insets go on a container around it (edge-to-edge is forced on Android 15+).
@@ -81,6 +94,19 @@ public class MainActivity extends Activity {
         super.onPause();
     }
 
+    @Override protected void onActivityResult(int req, int res, Intent data) {
+        super.onActivityResult(req, res, data);
+        android.net.Uri uri = res == RESULT_OK && data != null ? data.getData() : null;
+        if (req == REQ_OPEN && fileCb != null) { fileCb.onReceiveValue(uri == null ? null : new android.net.Uri[]{uri}); fileCb = null; }
+        if (req == REQ_SAVE && uri != null && pendingSave != null) {
+            try (java.io.OutputStream o = getContentResolver().openOutputStream(uri)) {
+                o.write(pendingSave.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                android.widget.Toast.makeText(this, "Saved ✓", android.widget.Toast.LENGTH_SHORT).show();
+            } catch (Exception e) { android.widget.Toast.makeText(this, "Couldn't save the file", android.widget.Toast.LENGTH_LONG).show(); }
+            pendingSave = null;
+        }
+    }
+
     @Override public void onBackPressed() {
         if (web.canGoBack()) web.goBack(); else super.onBackPressed();
     }
@@ -101,6 +127,22 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> {
                 MedWidget.updateAll(MainActivity.this);
                 Alarms.reschedule(MainActivity.this);
+            });
+        }
+
+        @JavascriptInterface public String loadExtra() { return Store.rawExtra(MainActivity.this); }
+
+        @JavascriptInterface public void saveExtra(String json) {
+            Store.saveExtraRaw(MainActivity.this, json);
+            runOnUiThread(() -> Alarms.reschedule(MainActivity.this));
+        }
+
+        /** Backup / CSV export: Android's "save to…" picker (Drive, Downloads, …). */
+        @JavascriptInterface public void saveFile(String name, String mime, String text) {
+            runOnUiThread(() -> {
+                pendingSave = text;
+                Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(mime).putExtra(Intent.EXTRA_TITLE, name);
+                try { startActivityForResult(i, REQ_SAVE); } catch (Exception e) { pendingSave = null; }
             });
         }
 

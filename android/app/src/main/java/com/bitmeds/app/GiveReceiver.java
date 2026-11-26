@@ -17,6 +17,7 @@ public class GiveReceiver extends BroadcastReceiver {
     static final String ACTION_GIVE = "com.bitmeds.app.GIVE";
     static final String ACTION_WIDGET_GIVE = "com.bitmeds.app.WIDGET_GIVE";
     static final String ACTION_SNOOZE = "com.bitmeds.app.SNOOZE";
+    static final String ACTION_SKIP = "com.bitmeds.app.SKIP";
     static final String ACTION_CYCLE = "com.bitmeds.app.CYCLE";
     static final String ACTION_PINNED = "com.bitmeds.app.PINNED";
     static final String EXTRA_MED = "med";
@@ -56,6 +57,17 @@ public class GiveReceiver extends BroadcastReceiver {
             }
             case ACTION_GIVE: give(c, medId); return;
             case ACTION_SNOOZE: snooze(c, medId); return;
+            case ACTION_SKIP: {
+                JSONArray meds = Store.load(c);
+                JSONObject m = Store.find(meds, medId);
+                if (m == null) return;
+                Sched.skip(m, System.currentTimeMillis());
+                Store.save(c, meds);
+                Alarms.cancel(c, medId);
+                Toast.makeText(c, m.optString("name") + " skipped. Next " + Sched.when(c, m.optLong("nextAt")), Toast.LENGTH_LONG).show();
+                after(c);
+                return;
+            }
             case ACTION_CYCLE: cycle(c, wid); return;
             case ACTION_PINNED:
                 if (wid != AppWidgetManager.INVALID_APPWIDGET_ID && medId != null) {
@@ -71,8 +83,13 @@ public class GiveReceiver extends BroadcastReceiver {
         JSONArray meds = Store.load(c);
         JSONObject m = Store.find(meds, medId);
         if (m == null) return;
+        Supply before = Supply.of(m);
         Sched.give(m, System.currentTimeMillis());
         Store.save(c, meds);
+        Supply sup = Supply.of(m);
+        if (sup != null && sup.low && (before == null || !before.low))
+            Alarms.simple(c, Alarms.notifId(medId) + 1, "⚠ " + m.optString("name") + ": refill soon",
+                    sup.doses + (sup.doses == 1 ? " dose" : " doses") + " left (about " + Math.round(sup.daysLeft) + " days).");
         Alarms.cancel(c, medId);
         Alarms.buzz(c, 60);
         String site = Sched.nextSite(m);
