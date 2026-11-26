@@ -34,6 +34,7 @@ final class Alarms {
             if (snooze > now) best = Math.min(best, snooze);
             if (next - now > Sched.DAY) best = Math.min(best, next - ((next - now) / Sched.DAY) * Sched.DAY + 500); // widget day count steps down
         }
+        scheduleTick(c);
         AlarmManager am = c.getSystemService(AlarmManager.class);
         PendingIntent pi = PendingIntent.getBroadcast(c, 1, new Intent(c, AlarmReceiver.class),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
@@ -41,6 +42,19 @@ final class Alarms {
         boolean exact = Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms();
         if (exact) am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, best, pi);
         else am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, best, pi);
+    }
+
+    static final String ACTION_TICK = "com.bitmeds.app.TICK";
+
+    /** The widgets show minutes, so redraw them at the next minute boundary. RTC (not _WAKEUP): never wakes the phone. */
+    static void scheduleTick(Context c) {
+        AlarmManager am = c.getSystemService(AlarmManager.class);
+        PendingIntent pi = PendingIntent.getBroadcast(c, 2, new Intent(c, AlarmReceiver.class).setAction(ACTION_TICK),
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        if (!MedWidget.anyWidgets(c)) { am.cancel(pi); return; }
+        long next = (System.currentTimeMillis() / 60_000 + 1) * 60_000 + 200;
+        if (Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms()) am.setExact(AlarmManager.RTC, next, pi);
+        else am.set(AlarmManager.RTC, next, pi);
     }
 
     /** Called when the alarm fires: notify for doses that just came due or whose snooze ran out. */

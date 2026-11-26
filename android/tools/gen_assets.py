@@ -1,4 +1,4 @@
-"""Draws the Android launcher icons, notification icon and widget preview images.
+"""Draws the Android launcher icons and notification icon.
 Run from android/:  python3 tools/gen_assets.py   (needs Pillow)
 The syringe and ring are ports of syringeRows()/drawRing() in app/index.html and Sprites.java."""
 import math, os
@@ -71,22 +71,7 @@ for name, size in [('mdpi', 48), ('hdpi', 72), ('xhdpi', 96), ('xxhdpi', 144), (
     os.makedirs(f'{RES}/mipmap-{name}', exist_ok=True)
     im.save(f'{RES}/mipmap-{name}/ic_launcher.png')
 
-# widget picker previews
-os.makedirs(f'{RES}/drawable-nodpi', exist_ok=True)
-up(ring_frame(0.62), 4).save(f'{RES}/drawable-nodpi/widget_ring_preview.png')
-W, H = 520, 240
-im = Image.new('RGB', (W, H), (0, 0, 0)); d = ImageDraw.Draw(im)
-d.rectangle([0, 0, W - 9, H - 9], fill='#101428', outline='#2a2a4a', width=6)
-ring = up(ring_frame(0.62), 3); im.paste(ring, (18, 18))
-px = lambda n: ImageFont.truetype(FONT, n)
-d.text((200, 30), 'Testosterone', font=px(17), fill='#f4f1ff')
-d.text((200, 62), '0.5 ml · 200 mg/ml', font=ImageFont.truetype(FONT, 11), fill='#facc15')
-d.text((200, 92), 'NEXT DOSE IN', font=px(9), fill='#9a97b8')
-d.text((200, 110), '2D 13:58:27', font=px(22), fill='#34d399')
-d.text((200, 146), 'SITE > RIGHT GLUTE', font=px(9), fill='#a78bfa')
-d.rectangle([18, 180, W - 27, H - 27], fill='#047857'); d.rectangle([18, 180, W - 27, H - 35], fill='#34d399')
-d.text((W // 2 - 4, 196), 'GAVE IT · RESET', font=px(13), fill='#0b0b16', anchor='ma')
-im.save(f'{RES}/drawable-nodpi/widget_preview.png')
+# widget picker previews come from real renders: WidgetTest.rendersWidgets (single_0.png, list_1.png)
 
 # notification icon: white silhouette of the syringe as a vector
 rows = syringe(6, 0); rects = []

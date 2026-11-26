@@ -7,28 +7,27 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.util.SizeF;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.RemoteViews;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
 
 /**
- * Home screen timer. The countdown is a Chronometer, so it ticks every second on its own; the ring +
- * animation is a 4-frame ViewFlipper in the med's chosen style (ring, battery, hourglass, heart, tank, hop),
- * drawn by Pixel.java in the med's colours; it turns yellow when the dose is close and red when it's due.
- * Bitmaps are redrawn whenever a dose is given, comes due or gets close, and every 30 min.
+ * Single-med home screen timer. The whole widget is a pixel-art picture drawn at its real size by
+ * {@link WidgetArt} (pixel font, starfield, glowing timer, progress bar, GAVE IT button); the med's chosen
+ * animation plays on top in a 4-frame ViewFlipper. Redrawn every minute (Alarms.scheduleTick), when a
+ * dose is given / comes due, and when the widget is resized.
  */
 public class MedWidget extends AppWidgetProvider {
-    private static final int[] FRAMES = {R.id.f0, R.id.f1, R.id.f2, R.id.f3};
-    private static final int C_GREEN = 0xFF34D399, C_YELLOW = 0xFFFACC15, C_RED = 0xFFFF5D5D;
+    static final int[] FRAMES = {R.id.f0, R.id.f1, R.id.f2, R.id.f3};
 
     @Override public void onUpdate(Context c, AppWidgetManager mgr, int[] ids) {
         for (int id : ids) update(c, mgr, id);
@@ -46,98 +45,81 @@ public class MedWidget extends AppWidgetProvider {
         MedListWidget.updateAll(c);
     }
 
+    static boolean anyWidgets(Context c) {
+        AppWidgetManager mgr = AppWidgetManager.getInstance(c);
+        return mgr.getAppWidgetIds(new ComponentName(c, MedWidget.class)).length > 0
+                || mgr.getAppWidgetIds(new ComponentName(c, MedListWidget.class)).length > 0;
+    }
+
+    /** The widget's size in dp as the launcher shows it in portrait. */
+    static float[] sizeDp(AppWidgetManager mgr, int wid, float defW, float defH) {
+        Bundle o = mgr.getAppWidgetOptions(wid);
+        if (o == null) return new float[]{defW, defH};
+        if (Build.VERSION.SDK_INT >= 31) {
+            ArrayList<SizeF> sizes = o.getParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES);
+            if (sizes != null && !sizes.isEmpty()) return new float[]{sizes.get(0).getWidth(), sizes.get(0).getHeight()};
+        }
+        int w = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH), h = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT);
+        return w > 0 && h > 0 ? new float[]{w, h} : new float[]{defW, defH};
+    }
+
     static void update(Context c, AppWidgetManager mgr, int wid) {
         JSONArray meds = Store.load(c);
         JSONObject m = Store.forWidget(c, meds, wid);
-        Bitmap[] frames = null;
-        if (m != null && !Sprites.textOnly(m)) {
-            long now = System.currentTimeMillis(), left = m.optLong("nextAt") - now;
-            int state = left <= 0 ? Sprites.STATE_DUE : Sched.isSoon(m, left) ? Sprites.STATE_SOON : Sprites.STATE_OK;
-            float frac = Sched.frac(m, now);
-            frames = new Bitmap[4];
-            for (int k = 0; k < 4; k++) frames[k] = Sprites.frame(m, frac, state, k, 4);
+        float[] sz = sizeDp(mgr, wid, 300, 150);
+        mgr.updateAppWidget(wid, build(c, wid, m, meds.length(), sz[0], sz[1], System.currentTimeMillis()));
+    }
+
+    static RemoteViews build(Context c, int wid, JSONObject m, int count, float wDp, float hDp, long now) {
+        RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_canvas);
+        v.setOnClickPendingIntent(R.id.root, openApp(c));
+        if (m == null) {
+            WidgetArt.Geo g = new WidgetArt.Geo();
+            v.setImageViewBitmap(R.id.bg, WidgetArt.list(c, new ArrayList<>(), 1, wDp, hDp, wid, now, g));
+            v.setViewVisibility(R.id.flip, View.GONE);
+            v.setViewVisibility(R.id.give, View.GONE);
+            return v;
         }
-        RemoteViews wide = build(c, wid, m, meds.length(), frames, R.layout.widget_wide);
-        RemoteViews small = build(c, wid, m, meds.length(), frames, R.layout.widget_small);
-        RemoteViews views;
-        if (Build.VERSION.SDK_INT >= 31) {
-            Map<SizeF, RemoteViews> map = new HashMap<>();
-            map.put(new SizeF(100f, 100f), small);
-            map.put(new SizeF(220f, 100f), wide);
-            views = new RemoteViews(map);
-        } else {
-            Bundle o = mgr.getAppWidgetOptions(wid);
-            views = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250) >= 220 ? wide : small;
-        }
-        mgr.updateAppWidget(wid, views);
+        boolean armed = now - Store.armedAt(c, wid, m.optString("id")) <= GiveReceiver.CONFIRM_MS;
+        WidgetArt.Geo g = new WidgetArt.Geo();
+        v.setImageViewBitmap(R.id.bg, WidgetArt.single(c, m, wDp, hDp, armed, now, g));
+
+        if (g.art != null) {
+            int state = MedListWidget.stateOf(m, now), scale = Math.max(1, g.art.width() / Pixel.G);
+            for (int k = 0; k < 4; k++) v.setImageViewBitmap(FRAMES[k], Sprites.frame(m, Sched.frac(m, now), state, k, scale));
+            place(v, R.id.flip, g.art, g.d);
+            v.setViewVisibility(R.id.flip, View.VISIBLE);
+        } else v.setViewVisibility(R.id.flip, View.GONE);
+
+        place(v, R.id.give, g.give, g.d);
+        v.setViewVisibility(R.id.give, View.VISIBLE);
+        Intent give = GiveReceiver.widgetIntent(c, GiveReceiver.ACTION_WIDGET_GIVE, wid, m.optString("id"));
+        v.setOnClickPendingIntent(R.id.give, PendingIntent.getBroadcast(c, 0, give, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+        return v;
+    }
+
+    static PendingIntent openApp(Context c) {
+        return PendingIntent.getActivity(c, 0, new Intent(c, MainActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    /** Puts an overlay exactly over its spot in the picture (Android 12+; older launchers use the XML positions). */
+    static void place(RemoteViews v, int id, Rect r, float d) {
+        if (Build.VERSION.SDK_INT < 31 || r == null) return;
+        int dip = TypedValue.COMPLEX_UNIT_DIP;
+        v.setViewLayoutWidth(id, r.width() / d, dip);
+        v.setViewLayoutHeight(id, r.height() / d, dip);
+        v.setViewLayoutMargin(id, RemoteViews.MARGIN_START, r.left / d, dip);
+        v.setViewLayoutMargin(id, RemoteViews.MARGIN_TOP, r.top / d, dip);
+        v.setViewLayoutMargin(id, RemoteViews.MARGIN_END, 0, dip);
+        v.setViewLayoutMargin(id, RemoteViews.MARGIN_BOTTOM, 0, dip);
     }
 
     static double lum(int[] c) { return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255; }
 
-    /** "Right glute" → "R GLUTE" so it fits beside the due time. */
+    /** "Right glute" → "R GLUTE". */
     static String shortSite(String site) {
         String s = site.toUpperCase(java.util.Locale.getDefault());
         return s.replaceFirst("^LEFT ", "L ").replaceFirst("^RIGHT ", "R ");
-    }
-
-    static RemoteViews build(Context c, int wid, JSONObject m, int count, Bitmap[] frames, int layout) {
-        RemoteViews v = new RemoteViews(c.getPackageName(), layout);
-        PendingIntent open = PendingIntent.getActivity(c, 0, new Intent(c, MainActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        v.setOnClickPendingIntent(R.id.root, open);
-        if (m == null) {
-            v.setViewVisibility(R.id.content, View.GONE);
-            v.setViewVisibility(R.id.empty, View.VISIBLE);
-            return v;
-        }
-        v.setViewVisibility(R.id.content, View.VISIBLE);
-        v.setViewVisibility(R.id.empty, View.GONE);
-
-        long now = System.currentTimeMillis(), next = m.optLong("nextAt"), left = next - now;
-        boolean due = left <= 0, soon = Sched.isSoon(m, left);
-        boolean armed = now - Store.armedAt(c, wid, m.optString("id")) <= GiveReceiver.CONFIRM_MS;
-
-        // the med's colours: accent (main / light / dark) and its background
-        int[][] acc = Pixel.shades(Pixel.hex(Sprites.accent(m)));
-        int[] bg = Sprites.bg(m), white = {255, 255, 255};
-        int tone = due ? C_RED : soon ? C_YELLOW : Sprites.argb(acc[0]);
-        int[] face = armed ? new int[]{250, 204, 21} : due ? new int[]{255, 93, 93} : acc[0];
-        v.setInt(R.id.panel_fill, "setColorFilter", Sprites.argb(bg));
-        v.setInt(R.id.panel_border, "setColorFilter", due ? C_RED : Sprites.argb(Pixel.mix(bg, white, 0.16)));
-        v.setInt(R.id.give_face, "setColorFilter", Sprites.argb(face));
-        v.setInt(R.id.give_shadow, "setColorFilter", Sprites.argb(Pixel.shades(face)[2]));
-        v.setTextColor(R.id.give_text, lum(face) > 0.55 ? 0xFF0B0B16 : 0xFFFFFFFF);
-
-        boolean art = frames != null;   // "text only" style: no animation, the text column takes the whole widget
-        v.setViewVisibility(R.id.art_row, art ? View.VISIBLE : View.GONE);
-        if (art) for (int k = 0; k < 4; k++) v.setImageViewBitmap(FRAMES[k], frames[k]);
-        v.setTextViewText(R.id.name, m.optString("name"));
-        v.setTextViewText(R.id.dose, Sched.doseLine(m));
-        v.setTextColor(R.id.dose, Sprites.argb(acc[1]));
-
-        // Chronometer can't show days: show "3D" beside it and count the remainder. Alarms.reschedule
-        // wakes us when the remainder hits zero so the day count steps down.
-        long days = left >= Sched.DAY ? left / Sched.DAY : 0;
-        String fmt = due ? "LATE %s" : days > 0 ? days + "D %s" : null;   // one Chronometer → it all autosizes as a unit
-        v.setChronometer(R.id.chrono, SystemClock.elapsedRealtime() + left - days * Sched.DAY, fmt, true);
-        v.setChronometerCountDown(R.id.chrono, true);
-        v.setTextColor(R.id.chrono, tone);
-        v.setTextViewText(R.id.due, (due ? "was due " : "due ") + Sched.when(c, next));
-        v.setTextColor(R.id.due, Sprites.argb(Pixel.mix(bg, white, 0.58)));
-
-        // the next injection site rides on the due line, so it always fits
-        String site = Sched.nextSite(m);
-        if (!site.isEmpty()) v.setTextViewText(R.id.due, (due ? "was due " : "due ") + Sched.when(c, next) + " · " + shortSite(site));
-        v.setViewVisibility(R.id.small_extra, !art && layout == R.layout.widget_small ? View.VISIBLE : View.GONE);
-
-        v.setTextViewText(R.id.give_text, armed ? "TAP AGAIN TO LOG" : layout == R.layout.widget_small ? "↺ GAVE IT" : "↺ GAVE IT · RESET");
-        Intent give = GiveReceiver.widgetIntent(c, GiveReceiver.ACTION_WIDGET_GIVE, wid, m.optString("id"));
-        v.setOnClickPendingIntent(R.id.give, PendingIntent.getBroadcast(c, 0, give, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
-
-        v.setViewVisibility(R.id.cycle, count > 1 ? View.VISIBLE : View.GONE);
-        v.setTextColor(R.id.cycle, Sprites.argb(acc[1]));
-        Intent cyc = GiveReceiver.widgetIntent(c, GiveReceiver.ACTION_CYCLE, wid, null);
-        v.setOnClickPendingIntent(R.id.cycle, PendingIntent.getBroadcast(c, 0, cyc, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
-        return v;
     }
 }

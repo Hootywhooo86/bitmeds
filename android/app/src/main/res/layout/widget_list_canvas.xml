@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "bitmeds · all meds": one pixel-art picture (WidgetArt.list) with each med's animation + GAVE tap area placed over it. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root" android:layout_width="match_parent" android:layout_height="match_parent">
+    <ImageView android:id="@+id/bg" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:scaleType="fitXY" android:src="@drawable/widget_list_preview" android:contentDescription="@string/app_name" />
+    <ViewFlipper android:id="@+id/r0_flip" android:layout_width="80dp" android:layout_height="80dp" android:layout_gravity="top|start"
+        android:layout_marginStart="16dp" android:layout_marginTop="16dp" android:autoStart="true" android:flipInterval="300" android:visibility="gone">
+        <ImageView android:id="@+id/r0_f0" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/r0_f1" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/r0_f2" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/r0_f3" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+    </ViewFlipper>
+    <FrameLayout android:id="@+id/r0_hit" android:layout_width="60dp" android:layout_height="30dp" android:layout_gravity="top|start"
+        android:visibility="gone" android:contentDescription="Gave it" />
+    <ViewFlipper android:id="@+id/r1_flip" android:layout_width="80dp" android:layout_height="80dp" android:layout_gravity="top|start"
+        android:layout_marginStart="16dp" android:layout_marginTop="16dp" android:autoStart="true" android:flipInterval="300" android:visibility="gone">
+        <ImageView android:id="@+id/r1_f0" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/r1_f1" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/r1_f2" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/r1_f3" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+    </ViewFlipper>
+    <FrameLayout android:id="@+id/r1_hit" android:layout_width="60dp" android:layout_height="30dp" android:layout_gravity="top|start"
+        android:visibility="gone" android:contentDescription="Gave it" />
+    <ViewFlipper android:id="@+id/r2_flip" android:layout_width="80dp" android:layout_height="80dp" android:layout_gravity="top|start"
+        android:layout_marginStart="16dp" android:layout_marginTop="16dp" android:autoStart="true" android:flipInterval="300" android:visibility="gone">
+        <ImageView android:id="@+id/r2_f0" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/r2_f1" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/r2_f2" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/r2_f3" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+    </ViewFlipper>
+    <FrameLayout android:id="@+id/r2_hit" android:layout_width="60dp" android:layout_height="30dp" android:layout_gravity="top|start"
+        android:visibility="gone" android:contentDescription="Gave it" />
+    <ViewFlipper android:id="@+id/r3_flip" android:layout_width="80dp" android:layout_height="80dp" android:layout_gravity="top|start"
+        android:layout_marginStart="16dp" android:layout_marginTop="16dp" android:autoStart="true" android:flipInterval="300" android:visibility="gone">
+        <ImageView android:id="@+id/r3_f0" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/r3_f1" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/r3_f2" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/r3_f3" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+    </ViewFlipper>
+    <FrameLayout android:id="@+id/r3_hit" android:layout_width="60dp" android:layout_height="30dp" android:layout_gravity="top|start"
+        android:visibility="gone" android:contentDescription="Gave it" />
+</FrameLayout>
