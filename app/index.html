@@ -151,7 +151,47 @@
   .empty p{font-family:var(--px);font-size:10px;line-height:2;color:var(--muted);margin:14px 0 16px}
   .empty .spr{display:inline-block;animation:bob 1.2s steps(2) infinite}
 
+  /* per-med colours (set inline on each card) */
+  .card{background:var(--cbg,var(--panel));border-color:var(--cline,var(--line))}
+  .card .clock .t{color:var(--acc,var(--pill));text-shadow:0 0 10px var(--acc-glow,rgba(52,211,153,.5))}
+  .card .segs i.f{background:var(--acc,var(--pill))}
+  .card .segs i.h{box-shadow:0 0 6px var(--acc,var(--pill))}
+  .card .reset{background:var(--acc,var(--pill));color:var(--acc-ink,var(--bg));box-shadow:0 5px 0 var(--acc-d,var(--pill-deep))}
+  .card .dose b{color:var(--acc-l,var(--yellow))}
+  .card.hero{background:linear-gradient(180deg,var(--cbg,#17172f),var(--cbg2,#141428))}
+  .ring{background:var(--cbg2,#101428);border:3px solid var(--cline,var(--line));box-shadow:4px 4px 0 #000}
+  .ring canvas{image-rendering:pixelated}
+
   /* add form */
+  .addmed form{counter-reset:step}
+  .step{counter-increment:step}
+  .step::before{content:counter(step) " · "}
+  .step.sub{counter-increment:none;color:var(--muted)}
+  .step.sub::before{content:"▸ "}
+  .icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}
+  .icons button{background:var(--bg);border:3px solid var(--line);padding:8px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;font-family:var(--px);font-size:6px;color:var(--muted);letter-spacing:.5px}
+  .icons button.sel{border-color:var(--acc,var(--pill));color:var(--ink);background:#151530}
+  .icons button.sel .spr{animation:hop .45s steps(4)}
+  .swatches{display:flex;flex-wrap:wrap;gap:8px}
+  .swatches button,.swatches label{width:40px;height:40px;border:3px solid #000;box-shadow:3px 3px 0 #000;position:relative;cursor:pointer;display:grid;place-items:center;font-family:var(--px);font-size:12px;color:#fff;text-shadow:2px 2px 0 #000}
+  .swatches .sel{outline:3px solid var(--ink);outline-offset:2px}
+  .swatches .sel::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;font-family:var(--px);font-size:12px;color:#fff;text-shadow:2px 2px 0 #000}
+  .swatches label{background:conic-gradient(#ff5d5d,#facc15,#34d399,#60a5fa,#a78bfa,#f472b6,#ff5d5d)}
+  .swatches label input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;padding:0;border:0}
+  .styles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .styles button{background:var(--bg);border:3px solid var(--line);padding:8px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--px);font-size:7px;color:var(--muted);letter-spacing:1px}
+  .styles button canvas{width:100%;max-width:120px;aspect-ratio:1;image-rendering:pixelated;display:block}
+  .styles button.sel{border-color:var(--acc,var(--pill));color:var(--ink);box-shadow:inset 0 0 0 2px var(--acc-d,var(--pill-deep))}
+  .wprev{margin-top:16px;border:3px solid var(--cline,var(--line));background:var(--cbg2,#101428);box-shadow:5px 5px 0 #000;padding:12px;display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;max-width:420px}
+  .wprev canvas{width:96px;height:96px;image-rendering:pixelated}
+  .wprev .wn{font-family:var(--px);font-size:10px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wprev .wd{font-size:13px;font-weight:800;color:var(--acc-l,var(--yellow));margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wprev .wt{font-family:var(--px);font-size:15px;color:var(--acc,var(--pill));margin-top:8px;text-shadow:0 0 8px var(--acc-glow)}
+  .wprev .wa{font-size:12px;color:var(--muted);margin-top:6px}
+  .wprev .wb{grid-column:1/-1;font-family:var(--px);font-size:9px;text-align:center;padding:12px 8px;background:var(--acc,var(--pill));color:var(--acc-ink,#0b0b16);box-shadow:0 4px 0 var(--acc-d,var(--pill-deep));letter-spacing:1px}
+  .wprev-cap{font-family:var(--px);font-size:7px;color:var(--muted);margin-top:16px;letter-spacing:1px}
+  @media (max-width:420px){ .styles{grid-template-columns:repeat(2,1fr)} }
+
   .addmed{background:var(--panel);border:3px solid var(--line);box-shadow:6px 6px 0 #000;padding:20px;margin-bottom:40px}
   .step{font-family:var(--px);font-size:9px;color:var(--yellow);margin:20px 0 10px;letter-spacing:1px;line-height:1.6}
   .step:first-of-type{margin-top:4px}
@@ -233,23 +273,23 @@
   <section class="addmed" id="addmed">
     <h2 class="sec" id="formTitle">▸ ADD A MED</h2>
     <form id="form" autocomplete="off">
-      <div class="step">1 · WHAT TYPE?</div>
+      <div class="step">WHAT TYPE?</div>
       <div class="types" id="types"></div>
 
-      <div class="step">2 · WHAT IS IT?</div>
+      <div class="step">NAME OF MED</div>
       <div class="row">
         <div class="field"><label for="fName">Med name</label><input id="fName" placeholder="e.g. Testosterone cypionate" maxlength="60" required></div>
         <div class="field"><label for="fFor">Who it's for <span style="font-weight:400">(optional)</span></label><input id="fFor" placeholder="e.g. Me" maxlength="30"></div>
       </div>
 
-      <div class="step">3 · HOW MUCH?</div>
+      <div class="step">HOW MUCH?</div>
       <div class="row">
         <div class="field s"><label for="fAmt">Amount</label><input id="fAmt" type="number" inputmode="decimal" min="0" step="any" value="1" required></div>
         <div class="field"><label for="fUnit">Unit</label><select id="fUnit"></select></div>
         <div class="field"><label for="fStr">Strength <span style="font-weight:400">(optional)</span></label><input id="fStr" placeholder="e.g. 200 mg/ml" maxlength="30"></div>
       </div>
 
-      <div class="step">4 · WHEN IS IT DUE?</div>
+      <div class="step">WHAT TIME? WHICH DAYS?</div>
       <div class="tog" id="schedTog">
         <button type="button" data-s="days">SET DAYS + TIME</button>
         <button type="button" data-s="interval">EVERY X HOURS</button>
@@ -271,18 +311,36 @@
       </div>
 
       <div id="sitesStep" style="display:none">
-        <div class="step">5 · ROTATE INJECTION SITES <span style="color:var(--muted)">(OPTIONAL)</span></div>
+        <div class="step">ROTATE INJECTION SITES <span style="color:var(--muted)">(OPTIONAL)</span></div>
         <div class="sites" id="sites"></div>
         <div class="hint">Tap sites in the order you rotate through them. Each reset moves to the next one.</div>
       </div>
 
-      <div class="step" id="startStep">5 · WHERE ARE YOU NOW?</div>
+      <div class="step" id="startStep">WHERE ARE YOU NOW?</div>
       <div class="row">
         <div class="field"><label for="fStart">Timer start</label><select id="fStart"></select></div>
         <div class="field s" id="atWrap" style="display:none"><label for="fAt">Due at</label><input id="fAt" type="time"></div>
       </div>
 
-      <div class="step" id="descStep">6 · DESCRIPTION — WHAT YOU'RE GIVING</div>
+      <div class="step" id="lookStep">LOOK — ICON, COLOR + WIDGET ANIMATION</div>
+      <div id="lookBox">
+        <div class="step sub">ICON</div>
+        <div class="icons" id="icons"></div>
+        <div class="step sub">COLOR</div>
+        <div class="swatches" id="colors"></div>
+        <div class="step sub">BACKGROUND</div>
+        <div class="swatches" id="bgs"></div>
+        <div class="step sub">WIDGET ANIMATION — PICK 1 OF 6</div>
+        <div class="styles" id="styles"></div>
+        <div class="wprev-cap">▼ HOME SCREEN WIDGET PREVIEW</div>
+        <div class="wprev" id="wprev">
+          <canvas data-prev="1"></canvas>
+          <div><div class="wn" id="wpName">Your med</div><div class="wd" id="wpDose"></div><div class="wt" id="wpTime">--:--:--</div><div class="wa" id="wpDue"></div></div>
+          <div class="wb">↺ GAVE IT · RESET</div>
+        </div>
+      </div>
+
+      <div class="step" id="descStep">DESCRIPTION — WHAT YOU'RE GIVING</div>
       <textarea id="fDesc" maxlength="240" placeholder="e.g. Swab vial + site. Room-temp oil, draw slowly."></textarea>
 
       <div class="err" id="err"></div>
@@ -303,88 +361,26 @@
 
 <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">UNDO</button></div>
 
+<script src="pixelart.js"></script>
 <script>
 (() => {
   const NATIVE = window.BitmedsAndroid || null;
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // ---------- pixel sprites (16x16, one char per pixel) ----------
-  const PAL = { o:'#0b0b16', W:'#f4f1ff', G:'#34d399', g:'#047857', Y:'#facc15', y:'#a16207',
-                R:'#ff5d5d', B:'#60a5fa', b:'#1d4ed8', P:'#a78bfa', p:'#6d28d9', O:'#ff9f1c', s:'#9a97b8', k:'#c9c6e0', q:'#2a2a4a' };
-  const SPR = {
-    pill: ["................","................","................","................",
-      "...oooooooooo...","..oGGGGGWWWWWo..",".oGGGGGGWWWWWWo.",".oGgGGGGWWWWkWo.",
-      ".oGgGGGGWWWWkWo.",".oGGGGGGWWWWWWo.","..oGGGGGWWWWWo..","...oooooooooo...",
-      "................","................","................","................"],
-    tablet: ["................","................",".....oooooo.....","...ooWWWWWWoo...",
-      "..oWWWWWWWWWWo..","..oWWWWWWWWWWo..",".oWWWWWWWWWWWWo.",".okkkkkkkkkkkko.",
-      ".oWWWWWWWWWWWWo.","..oWWWWWWWWWWo..","..oWWWWWWWWWWo..","...ooWWWWWWoo...",
-      ".....oooooo.....","................","................","................"],
-    liquid: ["................","......oooo......","......oRRo......","......oRRo......",
-      ".....oooooo.....","....oWWWWWWo....","....oWkWWWWo....","....oPPPPPPo....",
-      "....oPpPPPPo....","....oPpPPPPo....","....oPPPPPPo....","....oPPPPPPo....",
-      "....oPPPPPPo....",".....oooooo.....","................","................"],
-    inhaler: ["................","....oooo........","....oYYo........","....oYyo........",
-      "....oYyo........","....oYyo........","....oYyo........","....oYyooooooo..",
-      "....oYYYYYYYYYo.","....oYYYYYYYYYo.","....oYYYYYooooo.","....oooooo......",
-      "................","................","................","................"],
-    drops: ["................","........o.......",".......oBo......",".......oBo......",
-      "......oBBBo.....",".....oBBBBBo....","....oBBBBBBBo...","....oBkBBBBBo...",
-      "...oBBkBBBBBBo..","...oBBkBBBBBBo..","...oBBBBBBBBBo..","....oBBBBBBbo...",
-      ".....obbbbbo....","......ooooo.....","................","................"],
-    cream: ["................","................","................","................",
-      ".ooooooooooo....",".oWWWWWWWWWoooo.",".oWGGGGGGGWoOOo.",".oWGgGGGGGWoOOo.",
-      ".oWGGGGGGGWoOOo.",".oWWWWWWWWWoooo.",".ooooooooooo....","................",
-      "................","................","................","................"],
-    patch: ["................","................","..oooooooooooo..","..oWWWWWWWWWWo..",
-      "..oWkkkkkkkkWo..","..oWkooooookWo..","..oWkoOOOOokWo..","..oWkoOOOOokWo..",
-      "..oWkoOOOOokWo..","..oWkooooookWo..","..oWkkkkkkkkWo..","..oWWWWWWWWWWo..",
-      "..oooooooooooo..","................","................","................"],
-    spray: ["................",".......oo.......","......oWWo.....s","......oWWo...s..",
-      ".....oooooo.....","....oWWWWWWo....","....oGGGGGGo....","....oGgGGGGo....",
-      "....oGgGGGGo....","....oGgGGGGo....","....oGGGGGGo....","....oGGGGGGo....",
-      ".....oooooo.....","................","................","................"],
-    other: ["................","................",".....oooooo.....",".....oRRRRo.....",
-      ".....oRRRRo.....","..ooooRRRRoooo..","..oRRRRRRRRRRo..","..oRRRRRRRRRRo..",
-      "..oRRRRRRRRRRo..","..ooooRRRRoooo..",".....oRRRRo.....",".....oRRRRo.....",
-      ".....oooooo.....","................","................","................"]
-  };
-  // syringe, drawn in code so the plunger + oil level can animate. f = filled columns 0..6, drip = 0..3
-  // (mirrored in the Android app's Sprites.java)
-  function syringeRows(f, drip){
-    const g = Array.from({length:16}, () => Array(16).fill('.'));
-    const set = (x, y, c) => { if (x >= 0 && x < 16 && y >= 0 && y < 16) g[y][x] = c; };
-    for (let x = 4; x <= 11; x++){ set(x, 4, 'o'); set(x, 9, 'o'); }
-    for (let y = 4; y <= 9; y++){ set(4, y, 'o'); set(11, y, 'o'); }
-    set(3, 3, 'o'); set(4, 3, 'o'); set(3, 10, 'o'); set(4, 10, 'o');           // finger grips
-    for (let x = 5; x <= 10; x++) for (let y = 5; y <= 8; y++){
-      const full = x >= 11 - f;
-      set(x, y, full ? (y === 5 ? 'W' : y === 8 ? 'y' : 'Y') : (y === 5 ? 'k' : 'q'));
-    }
-    for (let x = 6; x <= 10; x += 2) set(x, 5, (x >= 11 - f) ? 'O' : 's');     // dose marks
-    const stop = 10 - f;                                                          // rubber stopper
-    if (stop >= 5) for (let y = 5; y <= 8; y++) set(stop, y, 'o');
-    const plate = Math.max(0, Math.min(3, stop - 4));
-    for (let y = 4; y <= 9; y++) set(plate, y, 'o');
-    for (let x = plate + 1; x < Math.max(stop, 5); x++){ if (x === 4) continue; set(x, 6, 'k'); set(x, 7, 's'); }
-    set(12, 6, 'o'); set(12, 7, 'o'); set(12, 8, 'o');                              // hub
-    for (let x = 13; x <= 15; x++) set(x, 7, 'k');                                  // needle
-    if (drip === 1) set(15, 8, 'Y');
-    if (drip === 2){ set(15, 8, 'Y'); set(15, 9, 'Y'); }
-    if (drip === 3) set(15, 11, 'Y');
-    return g.map(r => r.join(''));
+  // ---------- pixel art (pixelart.js: icons + the 6 widget animation styles) ----------
+  const PA = window.PixelArt;
+  const iconOf = m => m.icon || PA.TYPE_ICON[m.type] || 'cross';
+  const accOf = m => PA.validHex(m.color) ? m.color : PA.COLORS[0];
+  const bgOf = m => PA.validHex(m.bg) ? m.bg : PA.BGS[0];
+  const styleOf = m => PA.STYLES.some(s => s[0] === m.style) ? m.style : 'ring';
+  const sprite = (icon, size, acc) => PA.iconSvg(icon, size, acc);
+  const sprSpan = (icon, size, acc) => `<span class="spr" data-icon="${icon}" data-acc="${acc || ''}" data-size="${size}">${sprite(icon, size, acc)}</span>`;
+  const lum = c => { const [r, g, b] = PA.hex(c); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; };
+  const inkOn = c => lum(c) > 0.55 ? '#0b0b16' : '#ffffff';
+  function accVars(acc, bg){
+    const [main, light, dark] = PA.shades(PA.hex(acc)), b = PA.hex(bg);
+    return `--acc:${acc};--acc-l:${PA.css(light)};--acc-d:${PA.css(dark)};--acc-glow:rgba(${main.join(',')},.5);--acc-ink:${inkOn(acc)};--cbg:${PA.css(PA.mix(b, [255,255,255], 0.04))};--cbg2:${bg};--cline:${PA.css(PA.mix(b, [255,255,255], 0.16))}`;
   }
-  SPR.injection = syringeRows(6, 0);
-  function rowsSvg(rows, size){
-    let r = '';
-    rows.forEach((row, y) => {
-      let x = 0;
-      while (x < 16){ const c = row[x]; if (!PAL[c]){ x++; continue; } let w = 1; while (x + w < 16 && row[x + w] === c) w++; r += `<rect x="${x}" y="${y}" width="${w}" height="1" fill="${PAL[c]}"/>`; x += w; }
-    });
-    return `<svg class="sprite" width="${size}" height="${size}" viewBox="0 0 16 16" aria-hidden="true">${r}</svg>`;
-  }
-  const sprite = (key, size) => rowsSvg(SPR[key] || SPR.other, size);
-  const sprSpan = (key, size) => `<span class="spr" data-key="${key}" data-size="${size}">${sprite(key, size)}</span>`;
 
   // ---------- med types + standard units ----------
   const TYPES = [
@@ -547,9 +543,9 @@
           <div class="segs" data-f="segs">${segs}</div>
         </div>`;
     return `
-      <article class="card${hero ? ' hero' : ''}${enter}" data-id="${m.id}" style="--i:${i};--sd:${(i * 0.9) % 4}s">
+      <article class="card${hero ? ' hero' : ''}${enter}" data-id="${m.id}" style="--i:${i};--sd:${(i * 0.9) % 4}s;${accVars(accOf(m), bgOf(m))}">
         <div class="top">
-          <div class="icon">${sprSpan(m.type, 48)}</div>
+          <div class="icon">${sprSpan(iconOf(m), 48, accOf(m))}</div>
           <div class="who">
             <div class="name">${esc(m.name)}</div>
             <div class="tag">${m.pinned ? '<span class="pin">★ </span>' : ''}${esc(typeOf(m.type).label)}${m.forWho ? ' · FOR ' + esc(m.forWho.toUpperCase()) : ''}</div>
@@ -559,13 +555,14 @@
           <button class="more" data-act="menu" aria-label="More options">⋮</button>
           <div class="menu">
             <button data-act="edit">✎ EDIT</button>
+            <button data-act="look">🎨 STYLE + COLOR</button>
             <button data-act="pin">${m.pinned ? '☆ UNPIN' : '★ PIN AS MAIN'}</button>
             <button data-act="dup">⧉ DUPLICATE</button>
             <button class="danger" data-act="del">✕ DELETE</button>
           </div>
         </div>
         ${m.desc ? `<div class="desc">${esc(m.desc)}</div>` : ''}
-        ${hero ? `<div class="hero-body"><div class="ring"><canvas></canvas>${sprSpan(m.type, 72)}</div>${clock}</div>` : clock}
+        ${hero ? `<div class="hero-body"><div class="ring"><canvas class="stylecv"></canvas></div>${clock}</div>` : clock}
         ${site ? `<div class="site"><span class="k">NEXT SITE ▸</span><b>${esc(site)}</b>${m.lastSite ? `<small>last: ${esc(m.lastSite)}</small>` : ''}</div>` : ''}
         <button class="reset" data-act="reset">↺ GAVE IT · RESET</button>
         ${hero && NATIVE ? '<button class="widgetbtn" data-act="widget">＋ ADD THIS TO HOME SCREEN</button>' : ''}
@@ -576,7 +573,7 @@
   function render(){
     const grid = $('grid');
     if (!meds.length){
-      grid.innerHTML = `<div class="empty">${sprSpan('injection', 72)}<p>NO TIMERS YET.<br>ADD YOUR FIRST MED BELOW ▼</p><button class="btn ghost" id="demoBtn">LOAD AN EXAMPLE</button></div>`;
+      grid.innerHTML = `<div class="empty">${sprSpan('syringe', 72)}<p>NO TIMERS YET.<br>ADD YOUR FIRST MED BELOW ▼</p><button class="btn ghost" id="demoBtn">LOAD AN EXAMPLE</button></div>`;
       $('demoBtn').onclick = loadDemo;
       tick(); return;
     }
@@ -629,6 +626,7 @@
     setHud('hudMeds', meds.length); setHud('hudDue', due); setHud('hudToday', today);
     $('hudNext').textContent = next ? fmtShort(next.nextAt - now) : '—';
     $('hudDueBox').classList.toggle('hot', due > 0);
+    paintWPrev();
     document.title = due ? `(${due}) DOSE DUE — bitmeds` : 'bitmeds — Dose Timers';
   }
 
@@ -636,7 +634,7 @@
   let frame = 0; const plays = new Map(); // id -> start time of a plunger animation
   setInterval(() => {
     frame++;
-    document.querySelectorAll('.spr[data-key="injection"]').forEach(el => {
+    document.querySelectorAll('.spr[data-icon="syringe"]').forEach(el => {
       const card = el.closest('.card'); const id = card && card.dataset.id; const size = +el.dataset.size;
       let f = 6, drip = [0,0,0,0,0,0,1,1,2,2,3,0][frame % 12];
       const p = id && plays.get(id);
@@ -648,7 +646,7 @@
       }
       if (RM){ f = 6; drip = 0; }
       const sig = f + ':' + drip;
-      if (el.dataset.sig !== sig){ el.dataset.sig = sig; el.innerHTML = rowsSvg(syringeRows(f, drip), size); }
+      if (el.dataset.sig !== sig){ el.dataset.sig = sig; el.innerHTML = PA.iconSvg('syringe', size, el.dataset.acc, PA.syringeRows(f, drip)); }
     });
   }, 110);
 
@@ -661,53 +659,8 @@
     starList = Array.from({length: Math.round(W * H / 9000)}, () => ({ x: Math.random() * W, y: Math.random() * H, z: Math.random() * 0.8 + 0.2, p: Math.random() * 6.28 }));
   }
   resize(); addEventListener('resize', resize);
-  // ring is rasterised on a 48x48 pixel grid, then scaled up with no smoothing so it stays crisp pixel art
-  const RG = 48, ringBuf = document.createElement('canvas'); ringBuf.width = ringBuf.height = RG;
-  const rbx = ringBuf.getContext('2d'), rimg = rbx.createImageData(RG, RG);
-  const hex = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
-  const RC = { pill:[hex('#34d399'), hex('#6ee7b7'), hex('#047857')], yellow:[hex('#facc15'), hex('#fde68a'), hex('#a16207')],
-               red:[hex('#ff5d5d'), hex('#ffa3a3'), hex('#991b1b')], track:[hex('#24244a'), hex('#2f2f5c'), hex('#15152e')], dim:[hex('#4a1f2a'), hex('#5c2633'), hex('#2a1018')] };
-  function drawRing(cv, m, now){
-    const s = cv.clientWidth; if (!s) return;
-    const px = Math.round(s * DPR); if (cv.width !== px){ cv.width = cv.height = px; }
-    const left = m.nextAt - now, frac = fracOf(m, now), dueNow = left <= 0;
-    const tone = dueNow ? 'red' : isSoon(m, left) ? 'yellow' : 'pill';
-    const N = 36, filled = Math.floor(frac * N), blink = Math.floor(now / 300) % 2, chase = Math.floor(now / 70);
-    const d = rimg.data, c0 = (RG - 1) / 2, rOut = 22.5, rIn = 17.5;
-    for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
-      const i = (y * RG + x) * 4, dx = x - c0, dy = y - c0, dist = Math.sqrt(dx * dx + dy * dy);
-      d[i + 3] = 0;
-      if (dist < rIn || dist > rOut) continue;
-      let t = (Math.atan2(dy, dx) + Math.PI / 2) / (Math.PI * 2); t = (t + 1) % 1;
-      const seg = Math.floor(t * N), within = (t * N) % 1;
-      if (within > 0.74) continue;                       // gap between blocks
-      let pal = RC.track;
-      if (dueNow) pal = ((seg - chase) % N + N) % N < 9 ? RC.red : RC.dim;
-      else if (seg < filled) pal = RC[tone];
-      else if (seg === filled) pal = blink ? RC[tone] : RC.track;
-      const shade = dist > rOut - 1.2 ? 1 : dist < rIn + 1.2 ? 2 : 0; // bevel: light outer edge, dark inner edge
-      const col = pal[shade];
-      d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = 255;
-    }
-    if (!RM && !dueNow){ // orbiting spark inside the ring
-      const a = -Math.PI / 2 + (now / 2400) % 1 * Math.PI * 2;
-      const sx = Math.round(c0 + Math.cos(a) * 14.5), sy = Math.round(c0 + Math.sin(a) * 14.5);
-      [[0,0],[1,0],[0,1],[1,1]].forEach(([ox, oy]) => { const i = ((sy + oy) * RG + sx + ox) * 4; d[i] = 244; d[i + 1] = 241; d[i + 2] = 255; d[i + 3] = 200; });
-    }
-    rbx.putImageData(rimg, 0, 0);
-    const c = cv.getContext('2d'); c.clearRect(0, 0, px, px); c.imageSmoothingEnabled = false;
-    c.globalAlpha = 0.55; c.drawImage(ringBuf, px / RG * 0.9, px / RG * 0.9, px, px); // drop shadow
-    c.globalCompositeOperation = 'source-atop'; c.fillStyle = '#000'; c.fillRect(0, 0, px, px); c.globalCompositeOperation = 'source-over';
-    c.globalAlpha = 1; c.drawImage(ringBuf, 0, 0, px, px);
-    if (!RM){ // soft glow at the leading block
-      const segA = -Math.PI / 2 + (dueNow ? (chase % N) + 4 : filled + 0.4) / N * Math.PI * 2;
-      const gx = px / 2 + Math.cos(segA) * px * 0.42, gy = px / 2 + Math.sin(segA) * px * 0.42;
-      const g = c.createRadialGradient(gx, gy, 0, gx, gy, px * 0.14);
-      const rgb = RC[tone][0].join(',');
-      g.addColorStop(0, `rgba(${rgb},${dueNow || blink ? 0.45 : 0.2})`); g.addColorStop(1, `rgba(${rgb},0)`);
-      c.fillStyle = g; c.fillRect(0, 0, px, px);
-    }
-  }
+  const frameK = t => RM ? 0 : Math.floor(t / 300) % 4;  // same 4 frames / 300ms as the Android widget
+  const stateOf = (m, t) => { const left = m.nextAt - t; return left <= 0 ? 2 : isSoon(m, left) ? 1 : 0; };
   function burst(x, y, palette, n){
     if (RM) return;
     for (let i = 0; i < n; i++){
@@ -731,7 +684,8 @@
         const sz = s.z > 0.75 ? 3 : 2; sctx.fillRect(Math.round(s.x), Math.round(s.y), sz, sz);
       });
       const t = Date.now();
-      document.querySelectorAll('.ring canvas').forEach(cv => { const m = meds.find(x => x.id === cv.closest('.card').dataset.id); if (m) drawRing(cv, m, t); });
+      document.querySelectorAll('.card .stylecv').forEach(cv => { const m = meds.find(x => x.id === cv.closest('.card').dataset.id); if (m) PA.paint(cv, { style: styleOf(m), icon: iconOf(m), accent: accOf(m), bg: bgOf(m), frac: fracOf(m, t), state: stateOf(m, t), k: frameK(t) }, DPR); });
+      paintLookPreviews(t);
       fctx.setTransform(DPR, 0, 0, DPR, 0, 0); fctx.clearRect(0, 0, W, H);
       parts = parts.filter(p => p.life > 0);
       parts.forEach(p => {
@@ -789,6 +743,7 @@
     if (act === 'menu'){ e.stopPropagation(); const mn = card.querySelector('.menu'); const was = mn.classList.contains('open'); document.querySelectorAll('.menu.open').forEach(x => x.classList.remove('open')); if (!was) mn.classList.add('open'); return; }
     if (act === 'reset') giveDose(m, btn);
     if (act === 'edit') startEdit(m);
+    if (act === 'look') startEdit(m, true);
     if (act === 'widget'){ let ok = false; try { ok = NATIVE.pinWidget(m.id); } catch(e) {} if (!ok) toast('Long-press your home screen → Widgets → bitmeds.'); }
     if (act === 'pin'){ const was = m.pinned; meds.forEach(x => x.pinned = false); m.pinned = !was; save(); firstPaint = true; render(); toast(m.pinned ? `${m.name} is your main timer.` : 'Unpinned.'); }
     if (act === 'dup'){ undoSnap = snap(); const c = { ...JSON.parse(JSON.stringify(m)), id: uid(), name: m.name + ' (copy)', log: [], pinned: false }; meds.push(c); fresh.add(c.id); save(); render(); toast('Duplicated.', true); }
@@ -798,12 +753,48 @@
 
   // ---------- form ----------
   let selType = 'injection', editing = null, sched = 'days', selDays = [1,4], selSites = [];
+  let selIcon = null, selColor = PA.COLORS[0], selBg = PA.BGS[0], selStyle = 'ring'; // selIcon null = follow the type
+  const curIcon = () => selIcon || PA.TYPE_ICON[selType];
+  // backgrounds stay dark enough for the white text on cards + widget to read
+  const toHex = c => '#' + c.map(x => x.toString(16).padStart(2, '0')).join('');
+  function darkBg(v){ let c = PA.hex(v), n = 0; while (lum(toHex(c)) > 0.3 && n++ < 30) c = PA.mix(c, [0, 0, 0], 0.12); return toHex(c); }
+  function paintLook(){
+    $('addmed').setAttribute('style', accVars(selColor, selBg));
+    $('icons').innerHTML = PA.ICONS.map(([k, l]) => `<button type="button" data-icon="${k}" class="${k === curIcon() ? 'sel' : ''}">${sprSpan(k, 36, selColor)}${l}</button>`).join('');
+    const sw = (list, cur, kind) => list.map(c => `<button type="button" data-${kind}="${c}" class="${c.toLowerCase() === cur.toLowerCase() ? 'sel' : ''}" style="background:${c}" aria-label="${c}"></button>`).join('')
+      + `<label class="${list.some(c => c.toLowerCase() === cur.toLowerCase()) ? '' : 'sel'}" title="Any color">+<input type="color" data-custom="${kind}" value="${cur}"></label>`;
+    $('colors').innerHTML = sw(PA.COLORS, selColor, 'color');
+    $('bgs').innerHTML = sw(PA.BGS, selBg, 'bg');
+    $('styles').innerHTML = PA.STYLES.map(([k, l]) => `<button type="button" data-style="${k}" class="${k === selStyle ? 'sel' : ''}"><canvas data-style="${k}"></canvas>${l}</button>`).join('');
+    paintTypes();
+  }
+  $('icons').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; selIcon = b.dataset.icon; paintLook(); });
+  $('styles').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; selStyle = b.dataset.style; paintLook(); beepGive(); });
+  ['colors','bgs'].forEach(id => {
+    $(id).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.color) selColor = b.dataset.color; if (b.dataset.bg) selBg = b.dataset.bg; paintLook(); });
+    $(id).addEventListener('input', e => { const i = e.target.closest('input[data-custom]'); if (!i) return; if (i.dataset.custom === 'color') selColor = i.value; else selBg = darkBg(i.value); $('addmed').setAttribute('style', accVars(selColor, selBg)); });
+    $(id).addEventListener('change', () => paintLook());
+  });
+  // live previews of the 6 styles + the widget mock (called from the animation loop)
+  function paintLookPreviews(t){
+    const demo = 0.12 + 0.84 * ((t / 7000) % 1);
+    document.querySelectorAll('#styles canvas').forEach(cv => PA.paint(cv, { style: cv.dataset.style, icon: curIcon(), accent: selColor, bg: selBg, frac: demo, state: 0, k: frameK(t) }, DPR));
+    const cv = document.querySelector('#wprev canvas');
+    if (cv) PA.paint(cv, { style: selStyle, icon: curIcon(), accent: selColor, bg: selBg, frac: demo, state: 0, k: frameK(t) }, DPR);
+  }
+  function paintWPrev(){
+    $('wpName').textContent = $('fName').value.trim() || 'Your med';
+    const amt = parseFloat($('fAmt').value) || 1;
+    $('wpDose').textContent = `${fmtAmt(amt)} ${$('fUnit').value}${$('fStr').value.trim() ? ' · ' + $('fStr').value.trim() : ''}`;
+    const now = Date.now(), mins = (parseInt($('fH').value, 10) || 0) * 60 + (parseInt($('fM').value, 10) || 0);
+    const next = sched === 'days' ? (selDays.length ? nextSlotAfter({ days: selDays, time: $('fTime').value || '20:00' }, now) : now) : now + Math.max(1, mins) * 60000;
+    $('wpTime').textContent = fmtLeft(next - now);
+    $('wpDue').textContent = 'due ' + fmtWhen(next);
+  }
   function paintTypes(){
-    $('types').innerHTML = TYPES.map(t => `<button type="button" class="type${t.k === selType ? ' sel' : ''}" data-k="${t.k}">${sprSpan(t.k, 44)}${t.label}</button>`).join('');
+    $('types').innerHTML = TYPES.map(t => `<button type="button" class="type${t.k === selType ? ' sel' : ''}" data-k="${t.k}">${sprSpan(PA.TYPE_ICON[t.k], 44, selColor)}${t.label}</button>`).join('');
     const inj = selType === 'injection';
     $('sitesStep').style.display = inj ? '' : 'none';
-    $('startStep').textContent = (inj ? 6 : 5) + ' · WHERE ARE YOU NOW?';
-    $('descStep').textContent = (inj ? 7 : 6) + " · DESCRIPTION — WHAT YOU'RE GIVING";
   }
   function paintUnits(keep){
     const units = typeOf(selType).units;
@@ -813,7 +804,7 @@
   }
   $('types').addEventListener('click', e => {
     const b = e.target.closest('.type'); if (!b) return;
-    selType = b.dataset.k; paintTypes(); paintUnits();
+    selType = b.dataset.k; paintTypes(); paintUnits(); paintLook();
   });
   function paintSched(){
     $('schedTog').querySelectorAll('button').forEach(b => b.classList.toggle('sel', b.dataset.s === sched));
@@ -867,21 +858,23 @@
 
   function resetForm(){
     $('form').reset(); selType = 'injection'; sched = 'days'; selDays = [1,4]; selSites = [];
-    paintTypes(); paintUnits(); paintSites();
+    selIcon = null; selColor = PA.COLORS[0]; selBg = PA.BGS[0]; selStyle = 'ring';
+    paintTypes(); paintUnits(); paintSites(); paintLook();
     $('fAmt').value = 1; $('fH').value = 8; $('fM').value = 0; $('fTime').value = '20:00'; $('atWrap').style.display = 'none';
     $('err').textContent = ''; paintPresets(); paintSched();
   }
-  function startEdit(m){
+  function startEdit(m, look){
     editing = m.id; selType = m.type; sched = m.sched || 'interval';
     selDays = m.days && m.days.length ? [...m.days] : [1,4]; selSites = [...(m.sites || [])];
-    paintTypes(); paintUnits(m.unit); paintSites();
+    selIcon = m.icon || null; selColor = accOf(m); selBg = bgOf(m); selStyle = styleOf(m);
+    paintTypes(); paintUnits(m.unit); paintSites(); paintLook();
     $('fName').value = m.name; $('fFor').value = m.forWho || ''; $('fAmt').value = m.amount; $('fStr').value = m.strength || '';
     $('fH').value = Math.floor((m.intervalMin || 480) / 60); $('fM').value = (m.intervalMin || 480) % 60; paintPresets();
     $('fTime').value = m.time || '20:00';
     $('fDesc').value = m.desc || '';
     paintSched(); $('fStart').value = 'keep'; $('atWrap').style.display = 'none';
     $('formTitle').textContent = '▸ EDIT MED'; $('saveBtn').textContent = '✓ SAVE CHANGES'; $('cancelBtn').style.display = '';
-    $('addmed').scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block:'start' });
+    (look ? $('lookStep') : $('addmed')).scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block:'start' });
   }
   function stopEdit(){
     editing = null;
@@ -889,6 +882,7 @@
     resetForm();
   }
   $('cancelBtn').onclick = stopEdit;
+  ['fName','fAmt','fStr','fUnit'].forEach(id => $(id).addEventListener('input', paintWPrev));
   function fail(msg){ const e = $('err'); e.textContent = msg; e.classList.remove('shake'); void e.offsetWidth; e.classList.add('shake'); }
 
   $('form').addEventListener('submit', e => {
@@ -905,7 +899,8 @@
     const rec = { ...(existing || {}), id: editing || uid(), type: selType, name, forWho: $('fFor').value.trim(), amount, unit: $('fUnit').value,
                   strength: $('fStr').value.trim(), desc: $('fDesc').value.trim(),
                   sched, intervalMin: intervalMin || 480, days: [...selDays], time,
-                  sites: selType === 'injection' ? [...selSites] : [], log: existing ? existing.log || [] : [] };
+                  sites: selType === 'injection' ? [...selSites] : [], log: existing ? existing.log || [] : [],
+                  icon: curIcon(), color: selColor, bg: selBg, style: selStyle };
     if (!existing) rec.siteIdx = 0;
     if (!(rec.siteIdx < rec.sites.length)) rec.siteIdx = 0;
     if (start === 'keep' && existing){
@@ -937,10 +932,11 @@
   function loadDemo(){
     const now = Date.now(), H = 3600000;
     const t = { id: uid(), type:'injection', name:'Testosterone', forWho:'', amount:0.5, unit:'ml', strength:'200 mg/ml · 100 mg', desc:'Swab vial + site. Room-temp oil, draw slowly.',
-                sched:'days', days:[1,4], time:'20:00', intervalMin:5040, sites:['Left glute','Right glute','Left thigh','Right thigh'], siteIdx:1, lastSite:'Left glute', pinned:true };
+                sched:'days', days:[1,4], time:'20:00', intervalMin:5040, sites:['Left glute','Right glute','Left thigh','Right thigh'], siteIdx:1, lastSite:'Left glute', pinned:true,
+                icon:'syringe', color:'#ff9f1c', bg:'#101428', style:'ring' };
     t.log = [now - 30 * H]; t.periodStart = t.log[0]; t.nextAt = nextSlotAfter(t, t.log[0] + GRACE);
     meds = [t,
-      { id: uid(), type:'pill', name:'Vitamin D', forWho:'', amount:1, unit:'capsule(s)', strength:'2000 IU', sched:'interval', intervalMin:1440, days:[], time:'08:00', desc:'With breakfast.', sites:[], nextAt: now + 9*60000, periodStart: now + 9*60000 - 1440*60000, log:[now - 23.85*H] }];
+      { id: uid(), type:'pill', name:'Vitamin D', forWho:'', amount:1, unit:'capsule(s)', strength:'2000 IU', sched:'interval', intervalMin:1440, days:[], time:'08:00', desc:'With breakfast.', sites:[], icon:'capsule', color:'#facc15', bg:'#0a1a2f', style:'battery', nextAt: now + 9*60000, periodStart: now + 9*60000 - 1440*60000, log:[now - 23.85*H] }];
     firstPaint = true; save(); render();
   }
 
@@ -952,7 +948,7 @@
   }
   window.bitmedsReload = () => { loadMeds(); render(); };
   window.bitmedsEdit = id => { const m = meds.find(x => x.id === id); if (m) startEdit(m); };
-  $('logoMark').innerHTML = sprite('injection', 26);
+  $('logoMark').innerHTML = sprite('syringe', 26);
   resetForm(); paintPrefs(); render();
   setInterval(tick, 1000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden){ loadMeds(); render(); } });

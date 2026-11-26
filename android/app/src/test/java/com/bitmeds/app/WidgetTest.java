@@ -34,7 +34,7 @@ public class WidgetTest {
                 .put("amount", 0.5).put("unit", "ml").put("strength", "200 mg/ml")
                 .put("sched", "days").put("days", new JSONArray().put(1).put(4)).put("time", "20:00")
                 .put("sites", new JSONArray().put("Left glute").put("Right glute").put("Left thigh"))
-                .put("siteIdx", 1).put("nextAt", nextAt).put("periodStart", periodStart).put("log", new JSONArray());
+                .put("siteIdx", 1).put("icon", "syringe").put("color", "#ff9f1c").put("bg", "#101428").put("style", "ring").put("nextAt", nextAt).put("periodStart", periodStart).put("log", new JSONArray());
     }
 
     private static long at(int year, int month, int day, int h, int m) {
@@ -56,16 +56,30 @@ public class WidgetTest {
         assertEquals(2, m.getJSONArray("log").length());
     }
 
+    @Test public void everyStyleRendersAllFrames() {
+        for (String style : Pixel.STYLES) for (int state = 0; state < 3; state++) for (int k = 0; k < 4; k++) {
+            int[] px = Pixel.render(style, "syringe", "#34d399", "#101428", 0.5, state, k);
+            assertEquals(Pixel.G * Pixel.G, px.length);
+            java.util.Set<Integer> colours = new java.util.HashSet<>();
+            for (int p : px) colours.add(p);
+            assertTrue(style + " draws something", colours.size() > 4);
+        }
+    }
+
     @Test public void rendersWidgetSizes() throws Exception {
         Context c = ApplicationProvider.getApplicationContext();
         long now = System.currentTimeMillis();
         JSONObject ok = testo(now + 2 * Sched.DAY + 13 * Sched.HOUR, now - 30 * Sched.HOUR);
         JSONObject due = testo(now - 12 * Sched.MIN, now - 4 * Sched.DAY);
+        JSONObject pink = testo(now + 5 * Sched.HOUR, now - 60 * Sched.HOUR).put("name", "Vitamin D").put("icon", "capsule")
+                .put("color", "#f472b6").put("bg", "#1e0f2e").put("style", "heart").put("sites", new JSONArray());
+        JSONObject cyan = testo(now + 20 * Sched.HOUR, now - 10 * Sched.HOUR).put("name", "Insulin").put("icon", "pen")
+                .put("color", "#00e5ff").put("bg", "#0a1a2f").put("style", "tank");
         int n = 0;
-        for (JSONObject m : new JSONObject[]{ok, due}) {
+        for (JSONObject m : new JSONObject[]{ok, due, pink, cyan}) {
             Store.save(c, new JSONArray().put(m));
             Bitmap[] frames = new Bitmap[4];
-            for (int k = 0; k < 4; k++) frames[k] = Sprites.frame("injection", Sched.frac(m, now), m.getLong("nextAt") < now ? 2 : 0, k, 4);
+            for (int k = 0; k < 4; k++) frames[k] = Sprites.frame(m, Sched.frac(m, now), m.getLong("nextAt") < now ? 2 : 0, k, 4);
             for (int layout : new int[]{R.layout.widget_wide, R.layout.widget_small}) {
                 RemoteViews rv = MedWidget.build(c, 5, m, 2, frames, layout);
                 FrameLayout parent = new FrameLayout(c);
