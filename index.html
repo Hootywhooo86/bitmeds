@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bitmeds — Never miss a dose.</title>
+<meta name="description" content="bitmeds is the 128bit family's pixel medication reminder: dose schedules, tap-to-confirm taken doses, refill alerts, and streaks that pay XP into 128bitlife. Coming soon.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0b16;
+    --panel:#141428;
+    --pill:#34d399;
+    --pill-deep:#047857;
+    --yellow:#facc15;
+    --orange:#ff9f1c;
+    --purple:#a78bfa;
+    --red:#ff5d5d;
+    --ink:#f4f1ff;
+    --muted:#9a97b8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:radial-gradient(rgba(52,211,153,.08) 1px, transparent 1px);background-size:22px 22px}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
+  nav{display:flex;justify-content:space-between;align-items:center;padding:22px 0}
+  .logo{display:flex;align-items:center;gap:12px;font-family:'Press Start 2P',monospace;font-size:15px}
+  .logo-mark{width:34px;height:34px;background:var(--pill);display:grid;place-items:center;font-size:18px;box-shadow:0 4px 0 var(--pill-deep), 4px 0 0 var(--pill-deep), -4px 0 0 var(--pill-deep), 0 -4px 0 var(--pill-deep);image-rendering:pixelated}
+  .badge{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--bg);background:var(--yellow);padding:8px 10px;letter-spacing:1px;box-shadow:0 4px 0 #a16207}
+  header{text-align:center;padding:52px 0 30px}
+  .eyebrow{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--pill);letter-spacing:2px;margin-bottom:26px}
+  h1{font-family:'Press Start 2P',monospace;font-size:clamp(22px,5.5vw,44px);line-height:1.35;margin-bottom:24px;text-shadow:0 4px 0 #1a1a33, 4px 0 0 #1a1a33}
+  h1 .g{color:var(--pill)} h1 .y{color:var(--yellow)}
+  .sub{color:var(--muted);font-size:18px;max-width:620px;margin:0 auto 20px;line-height:1.6}
+  .try{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--pill);letter-spacing:1px;margin-bottom:26px}
+  .schedule{background:var(--panel);border:3px solid #2a2a4a;box-shadow:8px 8px 0 #000;margin-bottom:36px;min-height:420px}
+  .sched-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:18px;border-bottom:3px solid #2a2a4a}
+  .sched-head h2{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--pill)}
+  .sched-head .date{color:var(--muted);font-size:13px}
+  .sched-body{display:flex;gap:0}
+  .doses{flex:1;padding:18px;min-width:0}
+  .dose{display:flex;gap:12px;padding:14px 0;border-bottom:2px solid #2a2a4a;cursor:pointer;align-items:flex-start}
+  .dose:hover{background:#1a1a33}
+  .dose .box{width:26px;height:26px;border:3px solid #2a2a4a;flex-shrink:0;display:grid;place-items:center;font-size:15px;margin-top:2px}
+  .dose.taken .box{background:var(--pill);border-color:var(--pill-deep);color:#0b0b16}
+  .dose .info{flex:1;min-width:0}
+  .dose .name{font-weight:800;font-size:15px}
+  .dose .meta{color:var(--muted);font-size:13px;margin-top:3px;line-height:1.5}
+  .dose .meta b{color:var(--yellow)}
+  .dose.taken .name{color:var(--muted);text-decoration:line-through}
+  .dose .time{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--pill);flex-shrink:0;padding-top:4px}
+  .dose.taken .time{color:var(--muted)}
+  .dose.missed .time{color:var(--red)}
+  .side{width:280px;flex-shrink:0;border-left:3px solid #2a2a4a;padding:18px}
+  .side h3{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--pill);margin-bottom:14px}
+  .refill{padding:10px 0;border-bottom:2px solid #2a2a4a;font-size:14px;line-height:1.5}
+  .refill .low{color:var(--red);font-weight:800}
+  .refill .ok{color:var(--pill);font-weight:800}
+  .quest{margin-top:16px;background:#1f1f3a;padding:12px;font-size:13px;line-height:1.6}
+  .quest b{color:var(--pill)}
+  .quest .bar{height:10px;background:#0b0b16;margin-top:8px}
+  .quest .bar i{display:block;height:100%;background:var(--pill);width:0%;transition:width .3s}
+  .addmed{background:var(--panel);border:3px solid #2a2a4a;box-shadow:8px 8px 0 #000;padding:20px;margin-bottom:36px}
+  .addmed h3{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--pill);margin-bottom:14px}
+  .addmed form{display:flex;gap:10px;flex-wrap:wrap}
+  .addmed input,.addmed select{padding:12px;background:#0b0b16;border:3px solid #2a2a4a;color:var(--ink);font-size:14px}
+  .addmed input{flex:1;min-width:160px}
+  .addmed button{font-family:'Press Start 2P',monospace;font-size:10px;padding:12px 18px;background:var(--pill);color:#0b0b16;border:none;cursor:pointer;box-shadow:0 4px 0 var(--pill-deep)}
+  .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;padding:10px 0 36px}
+  .feat{background:var(--panel);border:3px solid #2a2a4a;padding:20px}
+  .feat h3{font-family:'Press Start 2P',monospace;font-size:11px;margin-bottom:10px;color:var(--pill)}
+  .feat p{color:var(--muted);font-size:14px;line-height:1.6}
+  .waitlist{background:var(--panel);border:3px solid #2a2a4a;padding:28px;text-align:center;margin-bottom:40px}
+  .waitlist h2{font-family:'Press Start 2P',monospace;font-size:14px;margin-bottom:16px}
+  .waitlist form{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .waitlist input{padding:12px 14px;background:#0b0b16;border:3px solid #2a2a4a;color:var(--ink);font-size:14px;min-width:240px}
+  .waitlist button{font-family:'Press Start 2P',monospace;font-size:10px;padding:12px 18px;background:var(--pill);color:#0b0b16;border:none;cursor:pointer;box-shadow:0 4px 0 var(--pill-deep)}
+  .waitlist .note{color:var(--muted);font-size:13px;margin-top:12px}
+  footer{text-align:center;color:var(--muted);font-size:13px;padding:20px 0 40px}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(80px);background:var(--pill);color:#0b0b16;font-family:'Press Start 2P',monospace;font-size:11px;padding:14px 20px;box-shadow:0 4px 0 var(--pill-deep);transition:transform .3s;z-index:30;max-width:90vw;text-align:center}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  @media (max-width:700px){ .sched-body{flex-direction:column} .side{width:auto;border-left:none;border-top:3px solid #2a2a4a} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="logo"><span class="logo-mark">💊</span> bitmeds</div>
+    <span class="badge">COMING SOON</span>
+  </nav>
+
+  <header>
+    <div class="eyebrow">PART OF THE 128BIT FAMILY</div>
+    <h1>Never miss <span class="g">a dose</span>.</h1>
+    <p class="sub">bitmeds is the family's medication reminder: your doses, on schedule, with a tap to confirm you took them — plus refill alerts so you never run dry on a trip.</p>
+    <div class="try">▼ TRY THE MOCK BELOW — TAP A DOSE TO MARK IT TAKEN, WATCH THE QUEST BAR MOVE ▼</div>
+  </header>
+
+  <section class="schedule">
+    <div class="sched-head">
+      <h2>📅 TODAY'S DOSES</h2>
+      <span class="date" id="todayDate"></span>
+    </div>
+    <div class="sched-body">
+      <div class="doses" id="doseList"></div>
+      <div class="side">
+        <h3>💊 REFILLS</h3>
+        <div id="refillList"></div>
+        <div class="quest">
+          <b>QUEST: NEVER MISS A DOSE</b><br>
+          Take every dose today to earn +25 XP.
+          <div class="bar"><i id="questbar"></i></div>
+          <span id="questtext">0 / 4 doses taken</span>
+          <div style="margin-top:8px">🔥 Streak: <b>7 days, no misses</b></div>
+          <div style="margin-top:4px">🎒 Trip mode: <b>packing checklist on</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="addmed">
+    <h3>➕ ADD A MEDICATION (SAMPLE)</h3>
+    <form id="addForm">
+      <input id="medName" type="text" placeholder="Medication name…" required>
+      <input id="medDose" type="text" placeholder="Dose — e.g. 1000 IU" required>
+      <input id="medTime" type="time" value="08:00" required>
+      <select id="medFreq">
+        <option value="Daily">Daily</option>
+        <option value="Weekly">Weekly</option>
+        <option value="Twice daily">Twice daily</option>
+      </select>
+      <button type="submit">ADD MED</button>
+    </form>
+  </section>
+
+  <section class="features">
+    <div class="feat"><h3>⏰ DOSE REMINDERS</h3><p>Every dose on its own schedule — daily, weekly, twice a day. A nudge at dose time, a tap to confirm you took it.</p></div>
+    <div class="feat"><h3>✅ TAP TO CONFIRM</h3><p>No more "did I take it already?" Tap a dose done and it's logged, with your streak kept safe.</p></div>
+    <div class="feat"><h3>📦 REFILL ALERTS</h3><p>Pills-left tracking with a heads-up before you run out — so a refill never becomes a missed week.</p></div>
+    <div class="feat"><h3>🎒 TRIP MODE</h3><p>Heading out of town? A packing checklist makes sure the meds come with you. Never again a forgotten bottle.</p></div>
+    <div class="feat"><h3>👨‍👩‍👧‍👦 FAMILY PROFILES</h3><p>One app, everyone's schedule — Daniel, Renee, Harlow, Zayn — each with their own doses and reminders.</p></div>
+    <div class="feat"><h3>🎮 DOSE QUESTS</h3><p>Every dose taken pays XP into 128bitlife. Streaks, badges, and a family that never misses.</p></div>
+  </section>
+
+  <section class="waitlist">
+    <h2>JOIN THE WAITLIST</h2>
+    <form id="waitlistForm">
+      <input type="email" placeholder="you@email.com" required>
+      <button type="submit">SIGN ME UP</button>
+    </form>
+    <p class="note" id="waitlistNote">Be first to know when bitmeds launches. Sample data only — your real meds stay yours.</p>
+  </section>
+
+  <footer>bitmeds — a 128bit family app · Built with pixels, not promises.</footer>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+  const doses = [
+    {name:'Vitamin D', dose:'1000 IU', time:'08:00', freq:'Daily', left:42, taken:false},
+    {name:'Multivitamin', dose:'1 tablet', time:'08:00', freq:'Daily', left:18, taken:false},
+    {name:'Omega-3', dose:'1 capsule', time:'12:30', freq:'Daily', left:5, taken:false},
+    {name:'Magnesium', dose:'200 mg', time:'21:00', freq:'Daily', left:27, taken:false}
+  ];
+  const toastEl = document.getElementById('toast');
+  let toastTimer;
+  function toast(msg){ toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(()=>toastEl.classList.remove('show'), 2400); }
+  function fmtTime(t){ const [h,m] = t.split(':'); const hh = ((+h + 11) % 12) + 1; return hh + ':' + m + ' ' + (+h >= 12 ? 'PM' : 'AM'); }
+  function render(){
+    const list = document.getElementById('doseList'); list.innerHTML = '';
+    let takenCount = 0;
+    doses.forEach((d, i) => {
+      if (d.taken) takenCount++;
+      const el = document.createElement('div');
+      el.className = 'dose' + (d.taken ? ' taken' : '');
+      el.innerHTML = '<span class="box">' + (d.taken ? '✓' : '') + '</span>' +
+        '<div class="info"><div class="name">' + d.name + '</div>' +
+        '<div class="meta">' + d.dose + ' · <b>' + d.freq + '</b> · ' + d.left + ' left</div></div>' +
+        '<span class="time">' + fmtTime(d.time) + '</span>';
+      el.addEventListener('click', () => {
+        d.taken = !d.taken;
+        if (d.taken) toast('DOSE TAKEN ✓ +' + (d.name === 'Magnesium' ? 10 : 5) + ' XP — ' + d.name.toUpperCase());
+        render();
+        if (doses.every(x => x.taken)) toast('QUEST COMPLETE! +25 XP — NEVER MISS A DOSE');
+      });
+      list.appendChild(el);
+    });
+    const refills = document.getElementById('refillList'); refills.innerHTML = '';
+    doses.forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'refill';
+      const low = d.left <= 7;
+      el.innerHTML = d.name + ' — <span class="' + (low ? 'low' : 'ok') + '">' + d.left + ' left' + (low ? ' · REFILL SOON' : '') + '</span>';
+      refills.appendChild(el);
+    });
+    document.getElementById('questbar').style.width = (takenCount / doses.length * 100) + '%';
+    document.getElementById('questtext').textContent = takenCount + ' / ' + doses.length + ' doses taken';
+  }
+  document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-CA', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  document.getElementById('addForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = document.getElementById('medName').value.trim();
+    const dose = document.getElementById('medDose').value.trim();
+    const time = document.getElementById('medTime').value;
+    const freq = document.getElementById('medFreq').value;
+    if (!name || !dose) return;
+    doses.push({name, dose, time, freq, left:30, taken:false});
+    render();
+    toast('MED ADDED ✓ — ' + name.toUpperCase());
+    e.target.reset();
+    document.getElementById('medTime').value = '08:00';
+  });
+  document.getElementById('waitlistForm').addEventListener('submit', e => {
+    e.preventDefault();
+    document.getElementById('waitlistNote').textContent = 'You are on the list. +10 XP for joining early.';
+    toast('+10 XP — WAITLIST JOINED');
+    e.target.reset();
+  });
+  render();
+</script>
+</body>
+</html>
