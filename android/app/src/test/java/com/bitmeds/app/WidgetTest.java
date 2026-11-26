@@ -110,6 +110,16 @@ public class WidgetTest {
                 render(c, rv, sz[0], sz[1], "single_" + (n++));
             }
         }
+        // the two extra layouts: art behind the text, and the big syringe gauge
+        JSONObject over = new JSONObject(testo.toString()).put("layout", "overlay").put("style", "ring").put("color", "#ff9f1c");
+        JSONObject over2 = new JSONObject(heart.toString()).put("layout", "overlay");
+        JSONObject gauge = new JSONObject(testo.toString()).put("layout", "gauge").put("color", "#ff9f1c");
+        JSONObject gaugeLate = new JSONObject(late.toString()).put("layout", "gauge");
+        int q = 0;
+        for (JSONObject m : new JSONObject[]{over, over2, gauge, gaugeLate})
+            for (float[] sz : new float[][]{{330, 160}, {330, 250}, {170, 170}})
+                render(c, MedWidget.build(c, 5, m, 2, sz[0], sz[1], now), sz[0], sz[1], "layout_" + (q++));
+
         List<JSONObject> many = MedListWidget.sorted(new JSONArray().put(testo).put(text).put(heart).put(pen).put(late));
         assertEquals("t2", many.get(0).getString("id"));               // overdue first
         render(c, MedListWidget.build(c, 9, many, 330, 160, now), 330, 160, "list_0");

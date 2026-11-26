@@ -143,6 +143,7 @@
         <div class="legend"><span><em style="background:var(--pill)"></em>ON TIME</span><span><em style="background:var(--yellow)"></em>LATE</span><span><em style="background:#5b5b7a"></em>SKIPPED</span><span><em style="background:var(--red)"></em>MISSED</span><span><em style="border:2px dashed #4b4b7a"></em>COMING UP</span></div>
       </div>
       ${(m.sites || []).length ? `<div class="xsec"><h3>▸ INJECTION SITES</h3>${siteMap(m, ents)}</div>` : ''}
+      ${(m.refills || []).length ? `<div class="xsec"><h3>▸ PRESCRIPTIONS PICKED UP</h3><div class="rows">${m.refills.map(r => `<div class="ok"><span>${fmtDate(r.t)}</span><b>${r.mode === 'add' ? '+' : '= '}${BM.fmtAmt(r.amt)} ${esc((m.unit || '').toUpperCase())}</b></div>`).join('')}</div></div>` : ''}
       <div class="xsec"><h3>▸ RECENT DOSES</h3><div class="rows">${recent || '<p class="note">Nothing logged yet — tap GAVE IT when you take a dose.</p>'}</div>
         <p class="note">Export your history for your doctor from the MORE tab.</p></div>`;
     $('hMeds').onclick = e => { const b = e.target.closest('button'); if (b) { hMed = b.dataset.med; paintHistory(); } };

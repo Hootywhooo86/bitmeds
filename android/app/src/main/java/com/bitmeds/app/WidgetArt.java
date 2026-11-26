@@ -140,6 +140,132 @@ final class WidgetArt {
         }
     }
 
+    // ------------------------------------------------------------------ layout: SYRINGE GAUGE
+
+    /** Big syringe on the left filling with the med as dose time nears; timer, doses left and button on the right. */
+    static Bitmap gaugeLayout(Context c, JSONObject m, float wDp, float hDp, boolean armed, long now, Geo g) {
+        float d = c.getResources().getDisplayMetrics().density;
+        int W = Math.max(40, Math.round(wDp * d)), H = Math.max(40, Math.round(hDp * d));
+        Bitmap bmp = Bitmap.createBitmap(W, H, Bitmap.Config.RGB_565);
+        Canvas cv = new Canvas(bmp);
+        Look L = new Look(c, m, now, armed);
+        g.d = d;
+        int sh = dp(d, 4);
+        Rect panel = new Rect(0, 0, W - sh, H - sh);
+        cv.drawColor(0xFF000000);
+        drawPanel(cv, new Rect(sh, sh, W, H), BLACK, BLACK, d, 0);
+        drawPanel(cv, panel, Sprites.argb(L.bg), L.border, d, m.optString("id").hashCode());
+        int pad = dp(d, 8);
+        Rect in = new Rect(panel.left + pad, panel.top + pad, panel.right - pad, panel.bottom - pad);
+        // syringe keeps the 24:60 shape of its pixel grid and takes the full height
+        int gh = in.height(), gw = Math.round(gh * Pixel.GW / (float) Pixel.GH);
+        if (gw > in.width() * 0.3f) { gw = Math.round(in.width() * 0.3f); gh = Math.round(gw * Pixel.GH / (float) Pixel.GW); }
+        Rect syr = new Rect(in.left, in.centerY() - gh / 2, in.left + gw, in.centerY() - gh / 2 + gh);
+        fill(cv, syr, Sprites.argb(L.bgSnap));
+        g.art = syr;
+        Rect col = new Rect(syr.right + dp(d, 10), in.top, in.right, in.bottom);
+        int btnH = clamp(Math.round(col.height() * 0.26f), dp(d, 34), dp(d, 60));
+        Rect btn = new Rect(col.left, col.bottom - btnH, col.right, col.bottom);
+        Rect body = new Rect(col.left, col.top, col.right, btn.top - dp(d, 6));
+        int ch = body.height(), y = body.top;
+        Rect rLabel = new Rect(body.left, y, body.right, y += Math.round(ch * 0.13f));
+        Rect rName = new Rect(body.left, y += Math.round(ch * 0.02f), body.right, y += Math.round(ch * 0.22f));
+        Rect rTime = new Rect(body.left, y += Math.round(ch * 0.02f), body.right, y += Math.round(ch * 0.33f));
+        Rect rDoses = new Rect(body.left, y + Math.round(ch * 0.04f), body.right, body.bottom);
+        text(cv, c, L.label, rLabel, L.accentLight, 10, false, false);
+        text(cv, c, L.name, rName, INK, 24, true, false);
+        text(cv, c, L.time, rTime, L.tone, 72, true, true);
+        doses(cv, c, rDoses, L, m, d);
+        button(cv, c, btn, L, armed ? "TAP AGAIN" : col.width() < dp(d, 200) ? "GAVE IT" : "GAVE IT · RESET", d);
+        g.give = btn;
+        return bmp;
+    }
+
+    /** "19 DOSES LEFT" counter (big number + label), or the schedule when no supply is tracked. */
+    private static void doses(Canvas cv, Context c, Rect r, Look L, JSONObject m, float d) {
+        if (r.height() < dp(d, 10)) return;
+        Supply sp = Supply.of(m);
+        if (sp == null) { text(cv, c, L.info, r, L.muted, 12, false, false); return; }
+        int col = sp.low ? RED : Sprites.argb(L.acc[0]);
+        fill(cv, r, Sprites.argb(Pixel.mix(L.bg, new int[]{0, 0, 0}, 0.35)));
+        fill(cv, new Rect(r.left, r.top, r.left + Math.max(2, dp(d, 3)), r.bottom), col);
+        Rect in = new Rect(r.left + dp(d, 8), r.top + dp(d, 3), r.right - dp(d, 6), r.bottom - dp(d, 3));
+        int nw = Math.round(in.width() * 0.38f);
+        int used = text(cv, c, String.valueOf(sp.doses), new Rect(in.left, in.top, in.left + nw, in.bottom), col, 40, true, true);
+        Paint p = new Paint(); p.setTypeface(font(c)); p.setTextSize(used);
+        int x = in.left + Math.round(p.measureText(String.valueOf(sp.doses))) + dp(d, 6);
+        Rect lab = new Rect(x, in.top, in.right, in.bottom);
+        text(cv, c, (sp.doses == 1 ? "DOSE LEFT" : "DOSES LEFT") + (sp.low ? " · REFILL" : ""), new Rect(lab.left, lab.top, lab.right, lab.top + lab.height() / 2), sp.low ? RED : L.accentLight, 10, false, false);
+        text(cv, c, "~" + Math.round(sp.daysLeft) + " DAYS", new Rect(lab.left, lab.top + lab.height() / 2, lab.right, lab.bottom), L.muted, 10, false, false);
+    }
+
+    // ------------------------------------------------------------------ layout: OVERLAY
+
+    /** The animation fills the whole widget and the text sits on top of it. Returns 2 full frames (k = 0, 1). */
+    static Bitmap[] overlay(Context c, JSONObject m, float wDp, float hDp, boolean armed, long now, Geo g) {
+        float d = c.getResources().getDisplayMetrics().density;
+        int W = Math.max(40, Math.round(wDp * d)), H = Math.max(40, Math.round(hDp * d));
+        Look L = new Look(c, m, now, armed);
+        g.d = d;
+        int state = MedListWidget.stateOf(m, now), sh = dp(d, 4);
+        Rect panel = new Rect(0, 0, W - sh, H - sh);
+        int pad = dp(d, 10);
+        Rect in = new Rect(panel.left + pad, panel.top + pad, panel.right - pad, panel.bottom - pad);
+        int btnH = clamp(Math.round(in.height() * 0.26f), dp(d, 34), dp(d, 60));
+        Rect btn = new Rect(in.left, in.bottom - btnH, in.right, in.bottom);
+        Bitmap[] out = new Bitmap[2];
+        for (int k = 0; k < 2; k++) {
+            Bitmap bmp = Bitmap.createBitmap(W, H, Bitmap.Config.RGB_565);
+            Canvas cv = new Canvas(bmp);
+            cv.drawColor(0xFF000000);
+            drawPanel(cv, new Rect(sh, sh, W, H), BLACK, BLACK, d, 0);
+            // the art, scaled (nearest neighbour) to cover the panel
+            int[] px = Pixel.render(Sprites.style(m), Sprites.icon(m), Sprites.accent(m), Sprites.hex(L.bgSnap), L.frac, state, k);
+            // dim the picture toward the background so the text on top reads clearly
+            int[] bgc = L.bgSnap;
+            for (int i = 0; i < px.length; i++) {
+                int r = px[i] >> 16 & 255, gg = px[i] >> 8 & 255, b = px[i] & 255;
+                px[i] = (Math.round(r * 0.5f + bgc[0] * 0.5f) << 16) | (Math.round(gg * 0.5f + bgc[1] * 0.5f) << 8) | Math.round(b * 0.5f + bgc[2] * 0.5f);
+            }
+            int D = Math.max(panel.width(), panel.height()), ox = panel.left + (panel.width() - D) / 2, oy = panel.top + (panel.height() - D) / 2;
+            int[] row = new int[panel.width()];
+            for (int yy = panel.top; yy < panel.bottom; yy++) {
+                int sy = (yy - oy) * Pixel.G / D;
+                for (int xx = panel.left; xx < panel.right; xx++) row[xx - panel.left] = 0xFF000000 | px[sy * Pixel.G + (xx - ox) * Pixel.G / D];
+                bmp.setPixels(row, 0, panel.width(), panel.left, yy, panel.width(), 1);
+            }
+            // stepped dark bands top + bottom so the text reads on any picture
+            Paint p = new Paint();
+            int bands = 6;
+            for (int i = 0; i < bands; i++) {
+                p.setColor(Math.round(120 * (1 - i / (float) bands)) << 24);
+                int bh = Math.round(panel.height() * 0.42f / bands);
+                cv.drawRect(panel.left, panel.top + i * bh, panel.right, panel.top + (i + 1) * bh, p);
+                cv.drawRect(panel.left, panel.bottom - (i + 1) * bh - btnH, panel.right, panel.bottom - i * bh - btnH, p);
+            }
+            p.setColor(0xCC000000);
+            cv.drawRect(panel.left, btn.top - dp(d, 6), panel.right, panel.bottom, p);
+            // colour border on top
+            p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(dp(d, 3)); p.setColor(L.border); p.setAntiAlias(false);
+            float rad = dp(d, 12), hw = dp(d, 3) / 2f;
+            cv.drawRoundRect(new RectF(panel.left + hw, panel.top + hw, panel.right - hw, panel.bottom - hw), rad, rad, p);
+            int ch = btn.top - in.top - dp(d, 6), y = in.top;
+            Rect rLabel = new Rect(in.left, y, in.right, y += Math.round(ch * 0.13f));
+            Rect rName = new Rect(in.left, y += Math.round(ch * 0.02f), in.right, y += Math.round(ch * 0.24f));
+            Rect rTime = new Rect(in.left, y += Math.round(ch * 0.04f), in.right, y += Math.round(ch * 0.38f));
+            Rect rChips = new Rect(in.left, y + Math.round(ch * 0.04f), in.right, btn.top - dp(d, 8));
+            text(cv, c, L.label, rLabel, L.accentLight, 10, true, false);
+            text(cv, c, L.name, rName, INK, 26, true, false);
+            text(cv, c, L.time, rTime, L.tone, 80, true, true);
+            chips(cv, c, rChips, L, d, false);
+            button(cv, c, btn, L, armed ? "TAP AGAIN TO LOG" : in.width() < dp(d, 200) ? "GAVE IT" : "GAVE IT · RESET", d);
+            out[k] = bmp;
+        }
+        g.give = btn;
+        g.art = panel;
+        return out;
+    }
+
     // ------------------------------------------------------------------ several meds
 
     static Bitmap list(Context c, List<JSONObject> meds, int rows, float wDp, float hDp, int wid, long now, Geo g) {

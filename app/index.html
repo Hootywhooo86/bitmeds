@@ -175,6 +175,34 @@
   .card .supply span.low{border-color:var(--red);color:var(--red);animation:pulseB 1s steps(2) infinite}
   .card .supply span.hot{border-color:var(--orange);color:var(--orange)}
 
+  .clk-sup{font-family:var(--px);font-size:9px;color:var(--acc-l,var(--pill));margin-top:12px;letter-spacing:1px}
+  .clk-sup.low{color:var(--red);animation:blinkc 1s steps(2,start) infinite}
+  /* supply box */
+  .sup{background:var(--bg);border:3px solid var(--cline,var(--line));padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center}
+  .sup-top{display:flex;align-items:center;gap:10px;grid-column:1/-1}
+  .sup-k{font-family:var(--px);font-size:8px;color:var(--acc-l,var(--pill));letter-spacing:1px;flex:1}
+  .sup-n{font-family:var(--px);font-size:clamp(24px,8vw,34px);color:var(--acc,var(--pill));font-weight:400;text-shadow:3px 3px 0 #000,0 0 10px var(--acc-glow)}
+  .sup-u{font-family:var(--px);font-size:7px;color:var(--muted);line-height:1.6}
+  .sup-bar{grid-column:1/-1;display:grid;grid-template-columns:repeat(20,1fr);gap:2px}
+  .sup-bar i{height:12px;background:#1a1a33}
+  .sup-bar i.f{background:var(--acc,var(--pill));box-shadow:inset 0 3px 0 rgba(255,255,255,.25)}
+  .sup-sub{font-size:12px;color:var(--muted);grid-column:1/-1}
+  .sup-btn{grid-column:1/-1;font-family:var(--px);font-size:9px;padding:12px;background:var(--panel-2);color:var(--ink);border:3px solid var(--acc,var(--pill));box-shadow:0 4px 0 #000;letter-spacing:1px}
+  .sup-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #000}
+  .sup.low{border-color:var(--red)}
+  .sup.low .sup-n,.sup.low .sup-k{color:var(--red)}
+  .sup.low .sup-bar i.f{background:var(--red);animation:pulseB 1s steps(2) infinite}
+  .sup.low .sup-btn{border-color:var(--red);background:var(--red);color:#fff}
+  .sup-empty{font-family:var(--px);font-size:8px;padding:12px;background:var(--bg);color:var(--muted);border:3px dashed var(--line);line-height:1.7;letter-spacing:.5px}
+  /* bottom sheet (stays above the keyboard + clear of the nav bar) */
+  .sheet{position:fixed;inset:0;z-index:78;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;padding:16px 12px calc(12px + env(safe-area-inset-bottom))}
+  .sheet[hidden]{display:none}
+  .sheet-card{background:var(--panel);border:3px solid var(--pill);box-shadow:6px 6px 0 #000;padding:16px;width:100%;max-width:520px;max-height:calc(100% - 8px);overflow:auto;display:flex;flex-direction:column;gap:12px;animation:menuIn .2s steps(3)}
+  .sheet-card h3{font-family:var(--px);font-size:10px;color:var(--pill);line-height:1.6}
+  .sheet-card .note{font-size:14px;color:var(--muted);line-height:1.5}
+  .sheet-card .note b{color:var(--ink)}
+  .sheet-card .actions{margin-top:4px}
+
   /* add form */
   .step,h2.sec,.card .tag,.clock .lbl,.empty p{text-wrap:balance}
   .addmed form{counter-reset:step}
@@ -196,6 +224,27 @@
   .styles button{background:var(--bg);border:3px solid var(--line);padding:8px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--px);font-size:7px;color:var(--muted);letter-spacing:1px}
   .styles button canvas{width:100%;max-width:120px;aspect-ratio:1;image-rendering:pixelated;display:block}
   .styles button.sel{border-color:var(--acc,var(--pill));color:var(--ink);box-shadow:inset 0 0 0 2px var(--acc-d,var(--pill-deep))}
+  .layouts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .layouts button{background:var(--bg);border:3px solid var(--line);padding:8px 6px;display:flex;flex-direction:column;gap:6px;font-family:var(--px);font-size:7px;color:var(--muted);letter-spacing:.5px;line-height:1.5;text-align:center;align-items:center}
+  .layouts button small{font-family:'Inter',system-ui,sans-serif;font-size:11px;letter-spacing:0;color:var(--muted);line-height:1.3}
+  .layouts button.sel{border-color:var(--acc,var(--pill));color:var(--ink);box-shadow:inset 0 0 0 2px var(--acc-d,var(--pill-deep))}
+  .lt{width:100%;aspect-ratio:2/1;background:var(--cbg2,#101428);position:relative;overflow:hidden;border:2px solid var(--cline,var(--line))}
+  .lt canvas{position:absolute;image-rendering:pixelated}
+  .lt i{position:absolute;height:12%;background:var(--ink);opacity:.85}
+  .lt b{position:absolute;left:6%;right:6%;bottom:8%;height:16%;background:var(--acc,var(--pill))}
+  .lt-classic canvas{left:5%;top:8%;height:60%;aspect-ratio:1}
+  .lt-classic i:nth-of-type(1){left:42%;top:12%;width:40%} .lt-classic i:nth-of-type(2){left:42%;top:32%;width:50%;height:18%;background:var(--acc,var(--pill))} .lt-classic i:nth-of-type(3){left:42%;top:56%;width:30%;opacity:.4}
+  .lt-overlay canvas{inset:0;width:100%;height:auto;top:-50%;opacity:.55}
+  .lt-overlay i:nth-of-type(1){left:6%;top:10%;width:45%} .lt-overlay i:nth-of-type(2){left:6%;top:30%;width:65%;height:22%;background:var(--acc,var(--pill))} .lt-overlay i:nth-of-type(3){left:6%;top:58%;width:35%;opacity:.4}
+  .lt-gauge canvas{left:5%;top:4%;height:92%;aspect-ratio:24/60}
+  .lt-gauge i:nth-of-type(1){left:30%;top:12%;width:45%} .lt-gauge i:nth-of-type(2){left:30%;top:32%;width:55%;height:18%;background:var(--acc,var(--pill))} .lt-gauge i:nth-of-type(3){left:30%;top:56%;width:20%;height:14%;background:var(--acc,var(--pill))}
+  .lt-gauge b{left:30%}
+  .wprev.lay-overlay{position:relative;grid-template-columns:1fr;overflow:hidden;isolation:isolate}
+  .wprev.lay-overlay canvas{position:absolute;inset:0;width:100%;height:auto;top:50%;transform:translateY(-50%);z-index:-1;opacity:.5}
+  .wprev.lay-overlay .wt{font-size:clamp(20px,7vw,30px)}
+  .wprev.lay-gauge{grid-template-columns:56px 1fr}
+  .wprev.lay-gauge canvas{width:56px;height:140px}
+  @media (max-width:420px){ .layouts{grid-template-columns:1fr} .lt{aspect-ratio:3/1} }
   .wprev{margin-top:16px;border:3px solid var(--cline,var(--line));background:var(--cbg2,#101428);box-shadow:5px 5px 0 #000;padding:12px;display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;max-width:420px}
   .wprev canvas{width:96px;height:96px;image-rendering:pixelated}
   .wprev .wn{font-family:var(--px);font-size:10px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -368,6 +417,8 @@
         <div class="step sub">WIDGET STYLE · 7 ANIMATIONS OR TEXT ONLY</div>
         <div class="styles" id="styles"></div>
         <div class="wprev-cap">▼ HOME SCREEN WIDGET PREVIEW</div>
+        <div class="step sub">WIDGET LAYOUT</div>
+        <div class="layouts" id="layouts"></div>
         <div class="wprev" id="wprev">
           <canvas data-prev="1"></canvas>
           <div><div class="wn" id="wpName">Your med</div><div class="wd" id="wpDose"></div><div class="wt" id="wpTime">--:--:--</div><div class="wa" id="wpDue"></div></div>
@@ -408,6 +459,7 @@
   </footer>
 </div>
 
+<div class="sheet" id="sheet" hidden></div>
 <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">UNDO</button></div>
 
 <script src="pixelart.js"></script>
@@ -628,6 +680,7 @@
           <div class="t" data-f="t"></div>
           <div class="at" data-f="at"></div>
           <div class="segs" data-f="segs">${segs}</div>
+          ${supplyOf(m) ? `<div class="clk-sup${supplyOf(m).low ? ' low' : ''}">💧 ${supplyOf(m).doses} DOSE${supplyOf(m).doses === 1 ? '' : 'S'} LEFT · ${fmtAmt(supplyOf(m).left)} ${esc(m.unit.toUpperCase())}</div>` : ''}
         </div>`;
     return `
       <article class="card${hero ? ' hero' : ''}${hero && styleOf(m) === 'text' ? ' textonly' : ''}${enter}" data-id="${m.id}" style="--i:${i};--sd:${(i * 0.9) % 4}s;${accVars(accOf(m), bgOf(m))}">
@@ -661,12 +714,57 @@
       </article>`;
   }
 
+  // supply box on every timer: big doses-left counter, gauge, days left, NEW SCRIPT button
   function supplyLine(m){
-    const sp = supplyOf(m), st = streakOf(m), bits = [];
-    if (sp) bits.push(`<span class="${sp.low ? 'low' : ''}">${sp.low ? '⚠ ' : '💧 '}${fmtAmt(sp.left)} ${esc(m.unit)} LEFT · ${sp.doses} DOSE${sp.doses === 1 ? '' : 'S'} · ~${Math.round(sp.days)}D</span>`);
-    if (st > 0) bits.push(`<span class="hot">🔥 ${st} ON-TIME STREAK</span>`);
-    return bits.length ? `<div class="supply">${bits.join('')}</div>` : '';
+    const sp = supplyOf(m), st = streakOf(m);
+    const streak = st > 0 ? `<div class="supply"><span class="hot">🔥 ${st} ON-TIME STREAK</span></div>` : '';
+    if (!sp) return `<button class="sup-empty" data-act="refill">💧 TRACK SUPPLY — HOW MANY DOSES DO I HAVE LEFT?</button>${streak}`;
+    const pct = sp.size > 0 ? Math.max(0, Math.min(1, sp.left / sp.size)) : 0, n = 20, filled = Math.round(pct * n);
+    const runOut = Date.now() + sp.days * 86400000;
+    return `<div class="sup${sp.low ? ' low' : ''}">
+        <div class="sup-top"><span class="sup-k">${sp.low ? '⚠ REFILL SOON' : '💧 SUPPLY'}</span><b class="sup-n">${sp.doses}</b><span class="sup-u">DOSE${sp.doses === 1 ? '' : 'S'}<br>LEFT</span></div>
+        <div class="sup-bar">${Array.from({length: n}, (_, i) => `<i class="${i < filled ? 'f' : ''}"></i>`).join('')}</div>
+        <div class="sup-sub">${fmtAmt(sp.left)} of ${fmtAmt(sp.size)} ${esc(m.unit)} · ~${Math.round(sp.days)} days · runs out ${esc(new Date(runOut).toLocaleDateString([], { month: 'short', day: 'numeric' }))}</div>
+        <button class="sup-btn" data-act="refill">＋ NEW SCRIPT / REFILL</button>
+      </div>${streak}`;
   }
+  // "new prescription" sheet: add what you picked up to what's left (or set the exact amount)
+  function openRefill(m){
+    const sp = supplyOf(m), u = m.unit || '';
+    const quick = /tablet|capsule|pill/i.test(u) ? [30, 60, 90] : /ml|cc/i.test(u) ? [1, 5, 10] : /puff/i.test(u) ? [120, 200] : [10, 30];
+    if (sp && sp.size && !quick.includes(sp.size)) quick.unshift(sp.size);
+    const sh = $('sheet');
+    sh.innerHTML = `<div class="sheet-card" role="dialog" aria-modal="true" aria-label="New prescription">
+      <h3>＋ NEW SCRIPT · ${esc(m.name.toUpperCase())}</h3>
+      <p class="note">${sp ? `You have <b>${fmtAmt(sp.left)} ${esc(u)}</b> left (${sp.doses} dose${sp.doses === 1 ? '' : 's'}).` : `Enter how much you have — bitmeds takes ${fmtAmt(m.amount)} ${esc(u)} off each dose you log.`}</p>
+      <div class="field"><label for="rfAmt">${sp ? 'Picked up' : 'Have now'} (${esc(u)})</label><input id="rfAmt" type="number" inputmode="decimal" min="0" step="any" value="${sp ? fmtAmt(sp.size) : ''}"></div>
+      <div class="presets" id="rfQuick">${quick.map(q => `<button type="button" data-q="${q}">${q} ${esc(u.toUpperCase())}</button>`).join('')}</div>
+      <div class="row"><div class="field s"><label for="rfSize">Full script size</label><input id="rfSize" type="number" inputmode="decimal" min="0" step="any" value="${sp ? fmtAmt(sp.size) : ''}"></div>
+      <div class="field s"><label for="rfLow">Warn at days left</label><input id="rfLow" type="number" inputmode="numeric" min="1" value="${(m.supply && m.supply.lowDays) || 14}"></div></div>
+      <div class="actions">${sp ? '<button class="btn" id="rfAdd">＋ ADD TO WHAT I HAVE</button><button class="btn ghost" id="rfSet">SET EXACT</button>' : '<button class="btn" id="rfSet">✓ SAVE SUPPLY</button>'}<button class="btn ghost" id="rfCancel">CANCEL</button>
+      ${sp ? '<button class="btn ghost" id="rfOff">STOP TRACKING</button>' : ''}</div></div>`;
+    sh.hidden = false;
+    setTimeout(() => $('rfAmt').focus(), 60);
+    const close = () => { sh.hidden = true; sh.innerHTML = ''; };
+    sh.onclick = e => { if (e.target === sh) close(); };
+    $('rfQuick').onclick = e => { const b = e.target.closest('button'); if (b) { $('rfAmt').value = b.dataset.q; if (!$('rfSize').value) $('rfSize').value = b.dataset.q; } };
+    $('rfCancel').onclick = close;
+    const apply = add => {
+      const n = parseFloat($('rfAmt').value); if (!(n >= 0)) return toast('Enter an amount, like 10.');
+      undoSnap = snap(); const now = Date.now();
+      const left = add && sp ? round3(sp.left + n) : n;
+      const size = Math.max(parseFloat($('rfSize').value) || 0, add ? n : 0, left > 0 && !sp ? left : 0) || left;
+      m.supply = { left, size, lowDays: parseInt($('rfLow').value, 10) || 14 };
+      m.refills = [{ t: now, amt: n, mode: add ? 'add' : 'set' }, ...(m.refills || [])].slice(0, 100);
+      m.u = now; save(); close(); render();
+      const s2 = supplyOf(m);
+      toast(`${m.name}: ${fmtAmt(left)} ${u} — ${s2.doses} doses (~${Math.round(s2.days)} days).`, true);
+    };
+    if ($('rfAdd')) $('rfAdd').onclick = () => apply(true);
+    $('rfSet').onclick = () => apply(false);
+    if ($('rfOff')) $('rfOff').onclick = () => { undoSnap = snap(); delete m.supply; m.u = Date.now(); save(); close(); render(); toast('Supply tracking off.', true); };
+  }
+
   // profile filter (family profiles)
   let profileFilter = 'all';
   function paintProfileBar(){
@@ -867,15 +965,7 @@
       m.nextAt = nextAfterGiven(m, now); m.periodStart = now; m.snoozeAt = null; m.u = now;
       save(); render(); toast(`${m.name} skipped. Next ${fmtWhen(m.nextAt)}.`, true);
     }
-    if (act === 'refill'){
-      const sp = supplyOf(m);
-      const v = prompt(`How much ${m.name} do you have now (${m.unit})?` + (sp ? `\nTip: leave as is to refill to ${fmtAmt(sp.size)}.` : ''), sp ? fmtAmt(sp.size) : '');
-      if (v === null) return;
-      const n = parseFloat(v); if (!(n >= 0)) return toast('Enter a number, like 10.');
-      undoSnap = snap();
-      m.supply = Object.assign({ lowDays: 14 }, m.supply || {}, { left: n, size: Math.max(n, (m.supply && m.supply.size) || 0) }); m.u = Date.now();
-      save(); render(); toast(`${m.name}: ${fmtAmt(n)} ${m.unit} in stock.`, true);
-    }
+    if (act === 'refill') openRefill(m);
     if (act === 'look') startEdit(m, true);
     if (act === 'listwidget'){ let ok = false; try { ok = NATIVE.pinListWidget(); } catch(e) {} if (!ok) toast('Long-press your home screen → Widgets → bitmeds · all meds.'); }
     if (act === 'widget'){ let ok = false; try { ok = NATIVE.pinWidget(m.id); } catch(e) {} if (!ok) toast('Long-press your home screen → Widgets → bitmeds.'); }
@@ -887,6 +977,8 @@
 
   // ---------- form ----------
   let selType = 'injection', editing = null, sched = 'days', selDays = [1,4], selSites = [];
+  const LAYOUTS = [['classic', 'CLASSIC', 'Animation beside the timer'], ['overlay', 'PICTURE BEHIND TEXT', 'Animation fills the widget, text on top'], ['gauge', 'SYRINGE GAUGE', 'Big syringe fills up · doses left']];
+  let selLayout = 'classic';
   let selIcon = null, selColor = PA.COLORS[0], selBg = PA.BGS[0], selStyle = 'ring'; // selIcon null = follow the type
   const curIcon = () => selIcon || PA.TYPE_ICON[selType];
   // backgrounds stay dark enough for the white text on cards + widget to read
@@ -901,6 +993,8 @@
     $('bgs').innerHTML = sw(PA.BGS, selBg, 'bg');
     $('styles').innerHTML = LOOKS.map(([k, l]) => `<button type="button" data-style="${k}" class="${k === selStyle ? 'sel' : ''}">${k === 'text' ? '<div class="txtprev"><b class="tp-n"></b><b class="tp-t"></b></div>' : `<canvas data-style="${k}"></canvas>`}${l}</button>`).join('');
     $('wprev').classList.toggle('textonly', selStyle === 'text');
+    $('layouts').innerHTML = LAYOUTS.map(([k, l, d]) => `<button type="button" data-layout="${k}" class="${k === selLayout ? 'sel' : ''}"><div class="lt lt-${k}"><canvas data-lt="${k}"></canvas><i></i><i></i><i></i><b></b></div><span>${l}</span><small>${d}</small></button>`).join('');
+    ['classic', 'overlay', 'gauge'].forEach(k => $('wprev').classList.toggle('lay-' + k, selStyle !== 'text' && selLayout === k));
     paintTypes();
   }
   $('icons').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; selIcon = b.dataset.icon; paintLook(); });
@@ -913,10 +1007,19 @@
   // live previews of the 6 styles + the widget mock (called from the animation loop)
   function paintLookPreviews(t){
     const demo = 0.12 + 0.84 * ((t / 7000) % 1);
+    document.querySelectorAll('#layouts canvas').forEach(cv => cv.dataset.lt === 'gauge'
+      ? PA.paintGauge(cv, { accent: selColor, bg: selBg, frac: demo, state: 0, k: frameK(t) }, DPR)
+      : PA.paint(cv, { style: selStyle === 'text' ? 'ring' : selStyle, icon: curIcon(), accent: selColor, bg: selBg, frac: demo, state: 0, k: frameK(t) }, DPR));
+    const wcv = document.querySelector('#wprev canvas');
+    if (wcv && selLayout === 'gauge' && selStyle !== 'text') { PA.paintGauge(wcv, { accent: selColor, bg: selBg, frac: demo, state: 0, k: frameK(t) }, DPR); return paintStylesOnly(t, demo); }
     document.querySelectorAll('#styles canvas').forEach(cv => PA.paint(cv, { style: cv.dataset.style, icon: curIcon(), accent: selColor, bg: selBg, frac: demo, state: 0, k: frameK(t) }, DPR));
     const cv = document.querySelector('#wprev canvas');
     if (cv) PA.paint(cv, { style: selStyle, icon: curIcon(), accent: selColor, bg: selBg, frac: demo, state: 0, k: frameK(t) }, DPR);
   }
+  function paintStylesOnly(t, demo){
+    document.querySelectorAll('#styles canvas').forEach(cv => PA.paint(cv, { style: cv.dataset.style, icon: curIcon(), accent: selColor, bg: selBg, frac: demo, state: 0, k: frameK(t) }, DPR));
+  }
+  $('layouts').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; selLayout = b.dataset.layout; paintLook(); beepGive(); });
   function paintWPrev(){
     $('wpName').textContent = $('fName').value.trim() || 'Your med';
     const amt = parseFloat($('fAmt').value) || 1;
@@ -995,7 +1098,7 @@
 
   function resetForm(){
     $('form').reset(); selType = 'injection'; sched = 'days'; selDays = [1,4]; selSites = [];
-    selIcon = null; selColor = PA.COLORS[0]; selBg = PA.BGS[0]; selStyle = 'ring';
+    selIcon = null; selColor = PA.COLORS[0]; selBg = PA.BGS[0]; selStyle = 'ring'; selLayout = 'classic';
     paintTypes(); paintUnits(); paintSites(); paintLook();
     $('fAmt').value = 1; $('fH').value = 8; $('fM').value = 0; $('fTime').value = '20:00'; $('atWrap').style.display = 'none';
     $('err').textContent = ''; paintPresets(); paintSched();
@@ -1004,7 +1107,7 @@
   function startEdit(m, look){
     editing = m.id; selType = m.type; sched = m.sched || 'interval';
     selDays = m.days && m.days.length ? [...m.days] : [1,4]; selSites = [...(m.sites || [])];
-    selIcon = m.icon || null; selColor = accOf(m); selBg = bgOf(m); selStyle = styleOf(m);
+    selIcon = m.icon || null; selColor = accOf(m); selBg = bgOf(m); selStyle = styleOf(m); selLayout = m.layout || 'classic';
     paintTypes(); paintUnits(m.unit); paintSites(); paintLook();
     $('fName').value = m.name; $('fFor').value = m.forWho || ''; $('fAmt').value = m.amount; $('fStr').value = m.strength || '';
     $('fH').value = Math.floor((m.intervalMin || 480) / 60); $('fM').value = (m.intervalMin || 480) % 60; paintPresets();
@@ -1039,7 +1142,7 @@
                   strength: $('fStr').value.trim(), desc: $('fDesc').value.trim(),
                   sched, intervalMin: intervalMin || 480, days: [...selDays], time,
                   sites: selType === 'injection' ? [...selSites] : [], log: existing ? existing.log || [] : [],
-                  icon: curIcon(), color: selColor, bg: selBg, style: selStyle, u: Date.now() };
+                  icon: curIcon(), color: selColor, bg: selBg, style: selStyle, layout: selLayout, u: Date.now() };
     const supLeft = parseFloat($('fSupLeft').value), supSize = parseFloat($('fSupSize').value), lowDays = parseInt($('fLowDays').value, 10) || 14;
     if (supLeft >= 0) rec.supply = { left: supLeft, size: supSize >= supLeft ? supSize : supLeft, lowDays };
     else if (existing && existing.supply && $('fSupLeft').value === '') delete rec.supply;

@@ -56,6 +56,15 @@ final class Sprites {
         return Bitmap.createBitmap(big, S, S, Bitmap.Config.RGB_565);
     }
 
+    /** Syringe-gauge frame drawn at exactly w x h px (nearest neighbour). */
+    static Bitmap gaugeFrame(JSONObject m, float frac, int state, int k, int w, int h) {
+        int[] px = Pixel.gauge(accent(m), hex(bg(m)), frac, state, k);
+        w = Math.max(Pixel.GW, Math.min(w, Pixel.GW * 12)); h = Math.max(Pixel.GH, Math.min(h, Pixel.GH * 12));
+        int[] big = new int[w * h];
+        for (int y = 0; y < h; y++) { int sy = y * Pixel.GH / h; for (int x = 0; x < w; x++) big[y * w + x] = 0xFF000000 | px[sy * Pixel.GW + x * Pixel.GW / w]; }
+        return Bitmap.createBitmap(big, w, h, Bitmap.Config.RGB_565);
+    }
+
     /** One animation frame (0..3) of the med's chosen style, scaled up with no smoothing. Opaque RGB_565 keeps widget updates small. */
     static Bitmap frame(JSONObject m, float frac, int state, int k, int scale) {
         int[] px = Pixel.render(style(m), icon(m), accent(m), hex(bg(m)), frac, state, k);

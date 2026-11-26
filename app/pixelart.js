@@ -316,6 +316,45 @@
     if (c.st === 2 && (c.k & 1) === 0) { for (y = 22; y <= 27; y++) { put(c.px, 44, y, c.T[0]); put(c.px, 45, y, c.T[0]); } put(c.px, 44, 29, c.T[0]); put(c.px, 45, 29, c.T[0]); }
   }
 
+  // SYRINGE GAUGE (widget layout): a tall syringe whose barrel fills with the med as dose time gets
+  // closer. 24 x 60 grid, 4 frames (rolling surface, rising bubbles, drip). Returns packed 0xRRGGBB pixels.
+  var GW = 24, GH = 60;
+  function gauge(o) {
+    var px = new Array(GW * GH), bg = hex(validHex(o.bg) ? o.bg : BGS[0]), i, x, y;
+    for (i = 0; i < px.length; i++) px[i] = pack(bg);
+    var st = o.state | 0, k = o.k & 3, frac = Math.max(0, Math.min(1, o.frac));
+    var ac = shades(hex(validHex(o.accent) ? o.accent : COLORS[0]));
+    var T = st === 2 ? shades(RED) : st === 1 ? shades(YEL) : ac;
+    var TR = [mix(bg, WHITE, 0.10), mix(bg, WHITE, 0.18), mix(bg, BLACK, 0.35)];
+    var K = hex(PAL.k), S = hex(PAL.s), W = hex(PAL.W);
+    function p(x, y, c) { if (x >= 0 && x < GW && y >= 0 && y < GH) px[y * GW + x] = pack(c); }
+    var top = 11, bot = 47, inner = bot - top - 1;                          // barrel rows (inside: top+1 .. bot-1)
+    var lvl = Math.round(frac * inner), surf = bot - lvl;                   // first liquid row
+    var stop = Math.max(top + 1, surf - 2);                                 // rubber stopper rests on the liquid
+    for (x = 4; x <= 19; x++) { p(x, 0, OUT); p(x, 2, OUT); p(x, 1, x === 4 || x === 19 ? OUT : K); }   // thumb plate
+    for (x = 1; x <= 22; x++) { p(x, 9, OUT); p(x, 10, x === 1 || x === 22 ? OUT : S); }               // finger flange
+    for (y = top; y <= bot; y++) { p(4, y, OUT); p(19, y, OUT); }
+    for (x = 4; x <= 19; x++) p(x, bot, OUT);
+    for (y = top + 1; y < bot; y++) for (x = 5; x <= 18; x++) {
+      var c = TR[2];
+      if (y >= surf) c = y === surf ? T[1] : (x === 6 ? T[1] : y >= bot - 2 ? T[2] : T[0]);
+      if (y === surf && ((x + k * 2) % 6 < 2)) c = T[0];                    // rolling surface
+      p(x, y, c);
+    }
+    for (y = stop; y < Math.min(stop + 2, surf); y++) for (x = 5; x <= 18; x++) p(x, y, OUT);     // stopper
+    for (y = top + 3; y < bot; y += 4) { p(16, y, y < surf ? S : T[1]); p(17, y, y < surf ? S : T[1]); if ((y - top) % 8 === 3) p(15, y, y < surf ? S : T[1]); }  // marks
+    for (y = top + 2; y < bot - 1; y++) if (y < surf - 2 || y > surf) p(7, y, y < surf ? TR[1] : W);  // glass shine
+    for (y = 3; y < stop; y++) { p(10, y, OUT); p(13, y, OUT); p(11, y, K); p(12, y, S); }             // plunger rod (over the glass)
+    if (lvl > 6) for (i = 0; i < 2; i++) {                                  // bubbles
+      var bx = 9 + i * 5, by = bot - 2 - ((k * 3 + i * 5) % Math.max(1, lvl - 3));
+      if (by > surf + 1) p(bx, by, T[1]);
+    }
+    for (y = bot + 1; y <= bot + 3; y++) for (x = 9; x <= 14; x++) p(x, y, x === 9 || x === 14 ? OUT : K);  // hub
+    for (y = bot + 4; y < GH - 2; y++) { p(11, y, K); p(12, y, S); }                                  // needle
+    if (st === 2 || frac >= 0.85) { var dy = [0, 1, 2, -1][k]; if (dy >= 0) { p(11, GH - 2 + Math.min(dy, 1), T[0]); p(12, GH - 2 + Math.min(dy, 1), T[0]); } }
+    return { w: GW, h: GH, px: px };
+  }
+
   // ---- web helpers ----
   function iconSvg(iconKey, size, accent, rows) {
     var ac = shades(hex(validHex(accent) ? accent : COLORS[0])), r = '', y, x;
@@ -346,8 +385,21 @@
     var cx = canvas.getContext('2d'); cx.imageSmoothingEnabled = false; cx.drawImage(buf, 0, 0, size, size);
   }
 
+  var gbuf = null;
+  function paintGauge(canvas, opts, dpr) {
+    if (typeof document === 'undefined') return;
+    if (!gbuf) { gbuf = document.createElement('canvas'); gbuf.width = GW; gbuf.height = GH; }
+    var cw = canvas.clientWidth, chh = canvas.clientHeight; if (!cw || !chh) return;
+    var w = Math.round(cw * (dpr || 1)), h = Math.round(chh * (dpr || 1));
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    var g = gauge(opts), bx = gbuf.getContext('2d'), im = bx.createImageData(GW, GH), d = im.data;
+    for (var i = 0; i < g.px.length; i++) { d[i * 4] = g.px[i] >> 16 & 255; d[i * 4 + 1] = g.px[i] >> 8 & 255; d[i * 4 + 2] = g.px[i] & 255; d[i * 4 + 3] = 255; }
+    bx.putImageData(im, 0, 0);
+    var cx = canvas.getContext('2d'); cx.imageSmoothingEnabled = false; cx.drawImage(gbuf, 0, 0, w, h);
+  }
+
   var api = { G: G, PAL: PAL, SPR: SPR, ICONS: ICONS, TYPE_ICON: TYPE_ICON, STYLES: STYLES, COLORS: COLORS, BGS: BGS,
-              syringeRows: syringeRows, iconRows: iconRows, render: render, paint: paint, iconSvg: iconSvg,
+              syringeRows: syringeRows, iconRows: iconRows, render: render, paint: paint, iconSvg: iconSvg, gauge: gauge, paintGauge: paintGauge,
               hex: hex, mix: mix, shades: shades, css: css, validHex: validHex };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.PixelArt = api;
 })(this);

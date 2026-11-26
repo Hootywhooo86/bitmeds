@@ -10,6 +10,10 @@ for (const [st] of P.STYLES) for (const [ic] of P.ICONS) for (let state = 0; sta
   const a = accents[(ic.length + k) % 3], b = bgs[(st.length + state) % 3];
   out.push([st, ic, a, b, frac, state, k].join(' ') + ' ' + P.render({ style: st, icon: ic, accent: a, bg: b, frac, state, k }).join(','));
 }
+for (let state = 0; state < 3; state++) for (const frac of [0, 0.1, 0.37, 0.81, 0.9, 1]) for (let k = 0; k < 4; k++) {
+  const a = ['#34d399', '#ff9f1c', '#00e5ff'][k % 3], b = ['#101428', '#1e0f2e'][state % 2];
+  out.push(['@gauge', 'x', a, b, frac, state, k].join(' ') + ' ' + P.gauge({ accent: a, bg: b, frac, state, k }).px.join(','));
+}
 require('fs').writeFileSync(process.argv[3], out.join('\n'));
 JS
 node "$T/r.js" "$PWD/app/pixelart.js" "$T/js.txt"
@@ -24,7 +28,8 @@ public class Parity {
     for (String line : Files.readAllLines(Paths.get(a[0]))) {
       String[] p = line.split(" ");
       int[] want = Arrays.stream(p[7].split(",")).mapToInt(Integer::parseInt).toArray();
-      int[] got = Pixel.render(p[0], p[1], p[2], p[3], Double.parseDouble(p[4]), Integer.parseInt(p[5]), Integer.parseInt(p[6]));
+      int[] got = p[0].equals("@gauge") ? Pixel.gauge(p[2], p[3], Double.parseDouble(p[4]), Integer.parseInt(p[5]), Integer.parseInt(p[6]))
+                                        : Pixel.render(p[0], p[1], p[2], p[3], Double.parseDouble(p[4]), Integer.parseInt(p[5]), Integer.parseInt(p[6]));
       int diff = 0; for (int i = 0; i < got.length; i++) if (got[i] != want[i]) diff++;
       frames++; if (diff > 0) { bad++; badPx += diff; if (bad <= 10) System.out.println("MISMATCH " + String.join(" ", Arrays.copyOf(p, 7)) + " : " + diff + " px"); }
     }

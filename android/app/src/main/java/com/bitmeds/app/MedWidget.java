@@ -82,14 +82,31 @@ public class MedWidget extends AppWidgetProvider {
         }
         boolean armed = now - Store.armedAt(c, wid, m.optString("id")) <= GiveReceiver.CONFIRM_MS;
         WidgetArt.Geo g = new WidgetArt.Geo();
-        v.setImageViewBitmap(R.id.bg, WidgetArt.single(c, m, wDp, hDp, armed, now, g));
+        String layout = Sprites.textOnly(m) ? "classic" : m.optString("layout", "classic");
+        int state = MedListWidget.stateOf(m, now);
 
-        if (g.art != null) {
-            int state = MedListWidget.stateOf(m, now);
+        if ("overlay".equals(layout)) {
+            // art fills the widget, text on top: the whole picture flips between 2 frames
+            Bitmap[] fr = WidgetArt.overlay(c, m, wDp, hDp, armed, now, g);
+            v.setImageViewBitmap(R.id.bg, fr[0]);
+            for (int k = 0; k < 4; k++) v.setImageViewBitmap(FRAMES[k], fr[k & 1]);
+            place(v, R.id.flip, new android.graphics.Rect(0, 0, Math.round(wDp * g.d), Math.round(hDp * g.d)), g.d);
+            v.setViewVisibility(R.id.flip, View.VISIBLE);
+        } else if ("gauge".equals(layout)) {
+            // big syringe on the left filling up; its 4 frames animate the surface, bubbles and drip
+            v.setImageViewBitmap(R.id.bg, WidgetArt.gaugeLayout(c, m, wDp, hDp, armed, now, g));
+            for (int k = 0; k < 4; k++) v.setImageViewBitmap(FRAMES[k], Sprites.gaugeFrame(m, Sched.frac(m, now), state, k, g.art.width(), g.art.height()));
+            place(v, R.id.flip, g.art, g.d);
+            v.setViewVisibility(R.id.flip, View.VISIBLE);
+        } else {
+            v.setImageViewBitmap(R.id.bg, WidgetArt.single(c, m, wDp, hDp, armed, now, g));
+        }
+
+        if ("classic".equals(layout) && g.art != null) {
             for (int k = 0; k < 4; k++) v.setImageViewBitmap(FRAMES[k], Sprites.frameExact(m, Sched.frac(m, now), state, k, g.art.width()));
             place(v, R.id.flip, g.art, g.d);
             v.setViewVisibility(R.id.flip, View.VISIBLE);
-        } else v.setViewVisibility(R.id.flip, View.GONE);
+        } else if ("classic".equals(layout)) v.setViewVisibility(R.id.flip, View.GONE);
 
         place(v, R.id.give, g.give, g.d);
         v.setViewVisibility(R.id.give, View.VISIBLE);

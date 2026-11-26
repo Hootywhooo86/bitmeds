@@ -300,4 +300,52 @@ final class Pixel {
             put(c.px, 44, 29, c.T[0]); put(c.px, 45, 29, c.T[0]);
         }
     }
+
+    // SYRINGE GAUGE widget layout: port of gauge() in app/pixelart.js. 24 x 60 grid, 0xRRGGBB pixels.
+    static final int GW = 24, GH = 60;
+
+    static int[] gauge(String accent, String bg, double frac, int state, int k) {
+        int[] b = hex(validHex(bg) ? bg : DEFAULT_BG);
+        int[] px = new int[GW * GH];
+        java.util.Arrays.fill(px, pack(b));
+        k &= 3;
+        frac = Math.max(0, Math.min(1, frac));
+        int[][] ac = shades(hex(validHex(accent) ? accent : DEFAULT_COLOR));
+        int[][] T = state == 2 ? shades(RED) : state == 1 ? shades(YEL) : ac;
+        int[][] TR = {mix(b, WHITE, 0.10), mix(b, WHITE, 0.18), mix(b, BLACK, 0.35)};
+        int[] K = unpack(SpriteData.pal('k')), S = unpack(SpriteData.pal('s')), W = unpack(SpriteData.pal('W'));
+        int top = 11, bot = 47, inner = bot - top - 1;
+        int lvl = (int) Math.round(frac * inner), surf = bot - lvl;
+        int stop = Math.max(top + 1, surf - 2);
+        for (int x = 4; x <= 19; x++) { gp(px, x, 0, OUT); gp(px, x, 2, OUT); gp(px, x, 1, x == 4 || x == 19 ? OUT : K); }
+        for (int x = 1; x <= 22; x++) { gp(px, x, 9, OUT); gp(px, x, 10, x == 1 || x == 22 ? OUT : S); }
+        for (int y = top; y <= bot; y++) { gp(px, 4, y, OUT); gp(px, 19, y, OUT); }
+        for (int x = 4; x <= 19; x++) gp(px, x, bot, OUT);
+        for (int y = top + 1; y < bot; y++) for (int x = 5; x <= 18; x++) {
+            int[] c = TR[2];
+            if (y >= surf) c = y == surf ? T[1] : (x == 6 ? T[1] : y >= bot - 2 ? T[2] : T[0]);
+            if (y == surf && ((x + k * 2) % 6 < 2)) c = T[0];
+            gp(px, x, y, c);
+        }
+        for (int y = stop; y < Math.min(stop + 2, surf); y++) for (int x = 5; x <= 18; x++) gp(px, x, y, OUT);
+        for (int y = top + 3; y < bot; y += 4) {
+            gp(px, 16, y, y < surf ? S : T[1]); gp(px, 17, y, y < surf ? S : T[1]);
+            if ((y - top) % 8 == 3) gp(px, 15, y, y < surf ? S : T[1]);
+        }
+        for (int y = top + 2; y < bot - 1; y++) if (y < surf - 2 || y > surf) gp(px, 7, y, y < surf ? TR[1] : W);
+        for (int y = 3; y < stop; y++) { gp(px, 10, y, OUT); gp(px, 13, y, OUT); gp(px, 11, y, K); gp(px, 12, y, S); }
+        if (lvl > 6) for (int i = 0; i < 2; i++) {
+            int bx = 9 + i * 5, by = bot - 2 - ((k * 3 + i * 5) % Math.max(1, lvl - 3));
+            if (by > surf + 1) gp(px, bx, by, T[1]);
+        }
+        for (int y = bot + 1; y <= bot + 3; y++) for (int x = 9; x <= 14; x++) gp(px, x, y, x == 9 || x == 14 ? OUT : K);
+        for (int y = bot + 4; y < GH - 2; y++) { gp(px, 11, y, K); gp(px, 12, y, S); }
+        if (state == 2 || frac >= 0.85) {
+            int dy = new int[]{0, 1, 2, -1}[k];
+            if (dy >= 0) { gp(px, 11, GH - 2 + Math.min(dy, 1), T[0]); gp(px, 12, GH - 2 + Math.min(dy, 1), T[0]); }
+        }
+        return px;
+    }
+
+    private static void gp(int[] px, int x, int y, int[] c) { if (x >= 0 && x < GW && y >= 0 && y < GH) px[y * GW + x] = pack(c); }
 }
