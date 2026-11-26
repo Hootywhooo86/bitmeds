@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
 <title>bitmeds</title>
 <meta name="description" content="bitmeds dose timers: add a med, pick its type, dose and schedule, and get an animated pixel countdown widget with a reset button.">
 <meta name="theme-color" content="#0b0b16">
@@ -162,6 +162,19 @@
   .ring{background:var(--cbg2,#101428);border:3px solid var(--cline,var(--line));box-shadow:4px 4px 0 #000}
   .ring canvas{image-rendering:pixelated}
 
+  /* tabs + profile bar + supply line */
+  .tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:12px 0 4px;position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 0 6px}
+  .tabs button{font-family:var(--px);font-size:clamp(6px,2vw,9px);padding:12px 2px;background:var(--panel-2);border:none;color:var(--muted);box-shadow:0 4px 0 #000;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tabs button.on{background:var(--pill);color:var(--bg);box-shadow:0 4px 0 var(--pill-deep)}
+  .pbar{display:flex;gap:8px;flex-wrap:wrap;margin:-4px 0 14px}
+  .pbar:empty{display:none}
+  .pbar button{font-family:var(--px);font-size:8px;padding:9px 10px;background:var(--panel-2);border:3px solid var(--line);color:var(--muted)}
+  .pbar button.on{border-color:var(--pill);color:var(--ink)}
+  .card .supply{display:flex;gap:8px;flex-wrap:wrap}
+  .card .supply span{font-family:var(--px);font-size:8px;padding:7px 8px;background:var(--bg);border:2px solid var(--cline,var(--line));color:var(--acc-l,var(--ink));letter-spacing:.5px;line-height:1.4}
+  .card .supply span.low{border-color:var(--red);color:var(--red);animation:pulseB 1s steps(2) infinite}
+  .card .supply span.hot{border-color:var(--orange);color:var(--orange)}
+
   /* add form */
   .step,h2.sec,.card .tag,.clock .lbl,.empty p{text-wrap:balance}
   .addmed form{counter-reset:step}
@@ -246,7 +259,7 @@
   .floater{position:fixed;z-index:76;font-family:var(--px);font-size:12px;color:var(--yellow);text-shadow:3px 3px 0 #000;pointer-events:none;white-space:nowrap;animation:floatUp 1.3s steps(12) forwards}
   @keyframes floatUp{0%{transform:translate(-50%,0) scale(.6);opacity:0}15%{transform:translate(-50%,-14px) scale(1.25);opacity:1}100%{transform:translate(-50%,-90px) scale(1);opacity:0}}
 
-  footer{color:var(--muted);font-size:12px;text-align:center;padding:0 0 40px;line-height:1.7}
+  footer{color:var(--muted);font-size:12px;text-align:center;padding:0 0 calc(40px + env(safe-area-inset-bottom));line-height:1.7}
   footer a{color:var(--pill)}
   @media (max-width:560px){
     .hud{grid-template-columns:repeat(2,1fr)}
@@ -272,6 +285,15 @@
     </div>
   </nav>
 
+  <div class="tabs" id="tabs" role="tablist">
+    <button data-tab="timers" class="on">TIMERS</button>
+    <button data-tab="history">HISTORY</button>
+    <button data-tab="trip">TRIP</button>
+    <button data-tab="labs">LABS</button>
+    <button data-tab="more">MORE</button>
+  </div>
+
+  <div class="tab" id="tab-timers">
   <div class="hud">
     <div class="stat">MEDS<b id="hudMeds">0</b></div>
     <div class="stat due" id="hudDueBox">DUE NOW<b id="hudDue">0</b></div>
@@ -280,6 +302,7 @@
   </div>
 
   <h2 class="sec">▸ DOSE TIMERS<span class="cur">_</span></h2>
+  <div class="pbar" id="profileBar"></div>
   <div class="grid" id="grid"></div>
 
   <section class="addmed" id="addmed">
@@ -291,7 +314,7 @@
       <div class="step">NAME OF MED</div>
       <div class="row">
         <div class="field"><label for="fName">Med name</label><input id="fName" placeholder="e.g. Testosterone cypionate" maxlength="60" required></div>
-        <div class="field"><label for="fFor">Who it's for <span style="font-weight:400">(optional)</span></label><input id="fFor" placeholder="e.g. Me" maxlength="30"></div>
+        <div class="field"><label for="fFor">Who it's for <span style="font-weight:400">(optional)</span></label><input id="fFor" placeholder="e.g. Me" maxlength="30" list="profileList"><datalist id="profileList"></datalist></div>
       </div>
 
       <div class="step">HOW MUCH?</div>
@@ -352,6 +375,14 @@
         </div>
       </div>
 
+      <div class="step">SUPPLY <span style="color:var(--muted)">(OPTIONAL)</span></div>
+      <div class="row">
+        <div class="field s"><label for="fSupLeft">Have now</label><input id="fSupLeft" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 10"></div>
+        <div class="field s"><label for="fSupSize">Full refill</label><input id="fSupSize" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 10"></div>
+        <div class="field s"><label for="fLowDays">Warn at days left</label><input id="fLowDays" type="number" inputmode="numeric" min="1" value="14"></div>
+      </div>
+      <div class="hint">In the same unit as the dose (<b id="supUnit">ml</b>). Each logged dose takes its amount off, and you get a heads-up before you run out.</div>
+
       <div class="step" id="descStep">DESCRIPTION — WHAT YOU'RE GIVING</div>
       <textarea id="fDesc" maxlength="240" placeholder="e.g. Swab vial + site. Room-temp oil, draw slowly."></textarea>
 
@@ -362,6 +393,12 @@
       </div>
     </form>
   </section>
+
+  </div><!-- /tab-timers -->
+  <div class="tab" id="tab-history" hidden></div>
+  <div class="tab" id="tab-trip" hidden></div>
+  <div class="tab" id="tab-labs" hidden></div>
+  <div class="tab" id="tab-more" hidden></div>
 
   <footer id="foot">
     Saved on this device only. Alerts and sounds work while this page is open.<br>
@@ -439,7 +476,28 @@
     const s = JSON.stringify(meds);
     try { localStorage.setItem(KEY, s); } catch(e) {}
     if (NATIVE){ try { NATIVE.save(s); } catch(e) {} }
+    (typeof hooks !== 'undefined' ? hooks : []).forEach(f => { try { f('meds'); } catch(e) {} });
   };
+  // non-med data: profiles, trip, labs, reminder settings, sync — mirrored to the Android app for its alarms
+  const XKEY = 'bitmeds.extra.v1';
+  let extra = {};
+  function loadExtra(){
+    let raw = null;
+    if (NATIVE && NATIVE.loadExtra){ try { raw = NATIVE.loadExtra(); } catch(e) {} }
+    if (!raw){ try { raw = localStorage.getItem(XKEY); } catch(e) {} }
+    try { extra = JSON.parse(raw || '{}') || {}; } catch(e) { extra = {}; }
+    extra.profiles = extra.profiles || []; extra.labs = extra.labs || []; extra.deleted = extra.deleted || {};
+    extra.settings = Object.assign({ headsUpH: 12, nagMin: 30, family: false }, extra.settings || {});
+  }
+  loadExtra();
+  const saveExtra = () => {
+    extra.u = Date.now();
+    const s = JSON.stringify(extra);
+    try { localStorage.setItem(XKEY, s); } catch(e) {}
+    if (NATIVE && NATIVE.saveExtra){ try { NATIVE.saveExtra(s); } catch(e) {} }
+    hooks.forEach(f => { try { f('extra'); } catch(e) {} });
+  };
+  const hooks = [];
   const savePrefs = () => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch(e) {} };
 
   // ---------- schedule math (mirrored in the Android app's Sched.java) ----------
@@ -456,6 +514,22 @@
     if (m.sched === 'days') return nextSlotAfter(m, Math.max(t + GRACE, m.nextAt || 0));
     return t + m.intervalMin * 60000;
   }
+
+  // ---------- supply + streak (mirrored in the Android app's Supply.java) ----------
+  function supplyOf(m){
+    const s = m.supply; if (!s || s.left == null || !(m.amount > 0)) return null;
+    const left = Math.max(0, +s.left), doses = Math.floor(left / m.amount + 1e-9);
+    const perDose = m.sched === 'days' ? 7 / Math.max(1, (m.days || []).length) : (m.intervalMin || 480) / 1440;
+    const days = doses * perDose;
+    return { left, size: +s.size || left, doses, days, low: days <= (+s.lowDays || 14) };
+  }
+  function streakOf(m){
+    let n = 0;
+    for (const e of (m.hist || [])){ if (e.skip) continue; if (e.due && e.t > e.due + GRACE) break; n++; }
+    return n;
+  }
+  const round3 = x => Math.round(x * 1000) / 1000;
+  function histPush(m, e){ m.hist = [e, ...(m.hist || [])].slice(0, 300); }
 
   // ---------- helpers ----------
   const $ = id => document.getElementById(id);
@@ -570,6 +644,8 @@
             <button data-act="edit">✎ EDIT</button>
             <button data-act="look">🎨 STYLE + COLOR</button>
             <button data-act="pin">${m.pinned ? '☆ UNPIN' : '★ PIN AS MAIN'}</button>
+            <button data-act="skip">⤼ SKIP THIS DOSE</button>
+            <button data-act="refill">💧 REFILL / SET SUPPLY</button>
             <button data-act="dup">⧉ DUPLICATE</button>
             <button class="danger" data-act="del">✕ DELETE</button>
           </div>
@@ -580,9 +656,27 @@
         <button class="reset" data-act="reset">↺ GAVE IT · RESET</button>
         ${hero && NATIVE ? '<button class="widgetbtn" data-act="widget">＋ ADD THIS MED TO HOME SCREEN</button>' : ''}
         ${hero && NATIVE && meds.length > 1 ? '<button class="widgetbtn" data-act="listwidget">＋ ADD ALL-MEDS WIDGET</button>' : ''}
+        ${supplyLine(m)}
         <div class="last">${m.log && m.log.length ? 'Last given ' + esc(fmtWhen(m.log[0])) : 'Not given yet'}</div>
       </article>`;
   }
+
+  function supplyLine(m){
+    const sp = supplyOf(m), st = streakOf(m), bits = [];
+    if (sp) bits.push(`<span class="${sp.low ? 'low' : ''}">${sp.low ? '⚠ ' : '💧 '}${fmtAmt(sp.left)} ${esc(m.unit)} LEFT · ${sp.doses} DOSE${sp.doses === 1 ? '' : 'S'} · ~${Math.round(sp.days)}D</span>`);
+    if (st > 0) bits.push(`<span class="hot">🔥 ${st} ON-TIME STREAK</span>`);
+    return bits.length ? `<div class="supply">${bits.join('')}</div>` : '';
+  }
+  // profile filter (family profiles)
+  let profileFilter = 'all';
+  function paintProfileBar(){
+    const names = [...new Set([...(extra.profiles || []).map(p => p.name), ...meds.map(m => m.forWho).filter(Boolean)])];
+    $('profileList').innerHTML = names.map(n => `<option value="${esc(n)}">`).join('');
+    if (names.length < 1){ $('profileBar').innerHTML = ''; return; }
+    if (profileFilter !== 'all' && !names.includes(profileFilter)) profileFilter = 'all';
+    $('profileBar').innerHTML = ['all', ...names].map(n => `<button data-p="${esc(n)}" class="${n === profileFilter ? 'on' : ''}">${n === 'all' ? 'EVERYONE' : esc(n.toUpperCase())}</button>`).join('');
+  }
+  $('profileBar').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; profileFilter = b.dataset.p; firstPaint = true; render(); });
 
   function render(){
     const grid = $('grid');
@@ -591,8 +685,10 @@
       $('demoBtn').onclick = loadDemo;
       tick(); return;
     }
+    paintProfileBar();
     const hid = heroId();
-    const sorted = [...meds].sort((a, b) => (b.id === hid) - (a.id === hid) || a.nextAt - b.nextAt);
+    const visible = profileFilter === 'all' ? meds : meds.filter(m => (m.forWho || '') === profileFilter);
+    const sorted = [...visible].sort((a, b) => (b.id === hid) - (a.id === hid) || a.nextAt - b.nextAt);
     grid.innerHTML = sorted.map((m, i) => cardHtml(m, i, m.id === hid)).join('');
     firstPaint = false; fresh.clear();
     tick();
@@ -733,11 +829,18 @@
     undoSnap = snap();
     const now = Date.now();
     m.log = [now, ...(m.log || [])].slice(0, 60);
+    histPush(m, { t: now, due: m.nextAt, ...(m.sites && m.sites.length ? { site: nextSite(m) } : {}) });
+    const wasLow = supplyOf(m) && supplyOf(m).low;
+    if (m.supply && m.supply.left != null) m.supply.left = Math.max(0, round3(m.supply.left - m.amount));
     if (m.sites && m.sites.length){ m.lastSite = nextSite(m); m.siteIdx = ((m.siteIdx || 0) + 1) % m.sites.length; }
     m.nextAt = nextAfterGiven(m, now);
     m.periodStart = now;
     m.snoozeAt = null;
+    m.u = now;
     save();
+    hooks.forEach(f => { try { f('given', m); } catch(e) {} });
+    const sp = supplyOf(m);
+    if (sp && sp.low && !wasLow) setTimeout(() => toast(`⚠ ${m.name}: only ${sp.doses} dose${sp.doses === 1 ? '' : 's'} left (~${Math.round(sp.days)} days). Time to refill.`), 2600);
     const r = btn.getBoundingClientRect();
     burst(r.left + r.width / 2, r.top + r.height / 2, ['#34d399','#facc15','#a78bfa','#f4f1ff','#047857'], 70);
     floater(r.left + r.width / 2, r.top - 8, '+1 DOSE LOGGED');
@@ -757,12 +860,28 @@
     if (act === 'menu'){ e.stopPropagation(); const mn = card.querySelector('.menu'); const was = mn.classList.contains('open'); document.querySelectorAll('.menu.open').forEach(x => x.classList.remove('open')); if (!was) mn.classList.add('open'); return; }
     if (act === 'reset') giveDose(m, btn);
     if (act === 'edit') startEdit(m);
+    if (act === 'skip'){
+      if (!confirm(`Skip this dose of ${m.name}? It's logged as skipped and the timer moves to the next one.`)) return;
+      undoSnap = snap(); const now = Date.now();
+      histPush(m, { t: now, due: m.nextAt, skip: true });
+      m.nextAt = nextAfterGiven(m, now); m.periodStart = now; m.snoozeAt = null; m.u = now;
+      save(); render(); toast(`${m.name} skipped. Next ${fmtWhen(m.nextAt)}.`, true);
+    }
+    if (act === 'refill'){
+      const sp = supplyOf(m);
+      const v = prompt(`How much ${m.name} do you have now (${m.unit})?` + (sp ? `\nTip: leave as is to refill to ${fmtAmt(sp.size)}.` : ''), sp ? fmtAmt(sp.size) : '');
+      if (v === null) return;
+      const n = parseFloat(v); if (!(n >= 0)) return toast('Enter a number, like 10.');
+      undoSnap = snap();
+      m.supply = Object.assign({ lowDays: 14 }, m.supply || {}, { left: n, size: Math.max(n, (m.supply && m.supply.size) || 0) }); m.u = Date.now();
+      save(); render(); toast(`${m.name}: ${fmtAmt(n)} ${m.unit} in stock.`, true);
+    }
     if (act === 'look') startEdit(m, true);
     if (act === 'listwidget'){ let ok = false; try { ok = NATIVE.pinListWidget(); } catch(e) {} if (!ok) toast('Long-press your home screen → Widgets → bitmeds · all meds.'); }
     if (act === 'widget'){ let ok = false; try { ok = NATIVE.pinWidget(m.id); } catch(e) {} if (!ok) toast('Long-press your home screen → Widgets → bitmeds.'); }
     if (act === 'pin'){ const was = m.pinned; meds.forEach(x => x.pinned = false); m.pinned = !was; save(); firstPaint = true; render(); toast(m.pinned ? `${m.name} is your main timer.` : 'Unpinned.'); }
     if (act === 'dup'){ undoSnap = snap(); const c = { ...JSON.parse(JSON.stringify(m)), id: uid(), name: m.name + ' (copy)', log: [], pinned: false }; meds.push(c); fresh.add(c.id); save(); render(); toast('Duplicated.', true); }
-    if (act === 'del'){ undoSnap = snap(); meds = meds.filter(x => x.id !== m.id); save(); render(); toast(`${m.name} deleted.`, true); if (editing === m.id) stopEdit(); }
+    if (act === 'del'){ undoSnap = snap(); extra.deleted[m.id] = Date.now(); saveExtra(); meds = meds.filter(x => x.id !== m.id); save(); render(); toast(`${m.name} deleted.`, true); if (editing === m.id) stopEdit(); }
   });
   document.addEventListener('click', e => { if (!e.target.closest('.menu,[data-act=menu]')) document.querySelectorAll('.menu.open').forEach(x => x.classList.remove('open')); });
 
@@ -813,6 +932,7 @@
     const inj = selType === 'injection';
     $('sitesStep').style.display = inj ? '' : 'none';
   }
+  document.addEventListener('change', e => { if (e.target.id === 'fUnit') $('supUnit').textContent = e.target.value; });
   function paintUnits(keep){
     const units = typeOf(selType).units;
     $('fUnit').innerHTML = units.map(u => `<option>${esc(u)}</option>`).join('');
@@ -879,6 +999,7 @@
     paintTypes(); paintUnits(); paintSites(); paintLook();
     $('fAmt').value = 1; $('fH').value = 8; $('fM').value = 0; $('fTime').value = '20:00'; $('atWrap').style.display = 'none';
     $('err').textContent = ''; paintPresets(); paintSched();
+    $('fSupLeft').value = ''; $('fSupSize').value = ''; $('fLowDays').value = 14;
   }
   function startEdit(m, look){
     editing = m.id; selType = m.type; sched = m.sched || 'interval';
@@ -889,6 +1010,7 @@
     $('fH').value = Math.floor((m.intervalMin || 480) / 60); $('fM').value = (m.intervalMin || 480) % 60; paintPresets();
     $('fTime').value = m.time || '20:00';
     $('fDesc').value = m.desc || '';
+    $('fSupLeft').value = m.supply && m.supply.left != null ? m.supply.left : ''; $('fSupSize').value = m.supply && m.supply.size || ''; $('fLowDays').value = m.supply && m.supply.lowDays || 14;
     paintSched(); $('fStart').value = 'keep'; $('atWrap').style.display = 'none';
     $('formTitle').textContent = '▸ EDIT MED'; $('saveBtn').textContent = '✓ SAVE CHANGES'; $('cancelBtn').style.display = '';
     (look ? $('lookStep') : $('addmed')).scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block:'start' });
@@ -917,7 +1039,10 @@
                   strength: $('fStr').value.trim(), desc: $('fDesc').value.trim(),
                   sched, intervalMin: intervalMin || 480, days: [...selDays], time,
                   sites: selType === 'injection' ? [...selSites] : [], log: existing ? existing.log || [] : [],
-                  icon: curIcon(), color: selColor, bg: selBg, style: selStyle };
+                  icon: curIcon(), color: selColor, bg: selBg, style: selStyle, u: Date.now() };
+    const supLeft = parseFloat($('fSupLeft').value), supSize = parseFloat($('fSupSize').value), lowDays = parseInt($('fLowDays').value, 10) || 14;
+    if (supLeft >= 0) rec.supply = { left: supLeft, size: supSize >= supLeft ? supSize : supLeft, lowDays };
+    else if (existing && existing.supply && $('fSupLeft').value === '') delete rec.supply;
     if (!existing) rec.siteIdx = 0;
     if (!(rec.siteIdx < rec.sites.length)) rec.siteIdx = 0;
     if (start === 'keep' && existing){
@@ -963,7 +1088,20 @@
     $('logoLink').removeAttribute('href');
     $('foot').innerHTML = 'Saved on this phone. Alarms ring even when bitmeds is closed.<br>bitmeds is a reminder, not medical advice — follow your doctor or pharmacist\'s directions.';
   }
-  window.bitmedsReload = () => { loadMeds(); render(); };
+  // when the keyboard opens, keep the field being typed in visible
+  document.addEventListener('focusin', e => {
+    if (!e.target.matches('input,textarea,select')) return;
+    setTimeout(() => e.target.scrollIntoView({ block: 'center', behavior: RM ? 'auto' : 'smooth' }), 320);
+  });
+  window.bitmedsReload = () => { loadMeds(); loadExtra(); render(); hooks.forEach(f => { try { f('reload'); } catch(e) {} }); };
+  // small API for extras.js (history, trip, labs, more) and sync.js (Supabase)
+  window.BM = {
+    get meds(){ return meds; }, set meds(v){ meds = v; },
+    get extra(){ return extra; }, set extra(v){ extra = v; },
+    save, saveExtra, render: () => { firstPaint = true; render(); }, toast, esc, uid, fmtWhen, fmtLeft, fmtAmt, fmtSched, doseLine,
+    nextSlotAfter, nextAfterGiven, GRACE, supplyOf, streakOf, iconOf, accOf, bgOf, styleOf, sprite, PA, NATIVE, RM,
+    onChange: f => hooks.push(f), burst, beepGive, typeOf
+  };
   window.bitmedsEdit = id => { const m = meds.find(x => x.id === id); if (m) startEdit(m); };
   $('logoMark').innerHTML = sprite('syringe', 26);
   resetForm(); paintPrefs(); render();
@@ -971,5 +1109,6 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden){ loadMeds(); render(); } });
 })();
 </script>
+<script src="extras.js"></script>
 </body>
 </html>

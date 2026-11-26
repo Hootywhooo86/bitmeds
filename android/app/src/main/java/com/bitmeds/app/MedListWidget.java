@@ -78,8 +78,8 @@ public class MedListWidget extends AppWidgetProvider {
             if (!show) continue;
             JSONObject m = meds.get(i);
             if (g.rowArt[i] != null) {
-                int scale = Math.max(1, g.rowArt[i].width() / Pixel.G), state = stateOf(m, now);
-                for (int k = 0; k < 4; k++) v.setImageViewBitmap(FR[i][k], Sprites.frame(m, Sched.frac(m, now), state, k, scale));
+                int state = stateOf(m, now);
+                for (int k = 0; k < 4; k++) v.setImageViewBitmap(FR[i][k], Sprites.frameExact(m, Sched.frac(m, now), state, k, g.rowArt[i].width()));
                 MedWidget.place(v, FLIP[i], g.rowArt[i], g.d);
             }
             MedWidget.place(v, HIT[i], g.rowGive[i], g.d);

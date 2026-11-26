@@ -38,20 +38,25 @@ public class MainActivity extends Activity {
         s.setMediaPlaybackRequiresUserGesture(false);
         web.setWebViewClient(new WebViewClient());
         web.addJavascriptInterface(new Bridge(), "BitmedsAndroid");
-        // keep content clear of the status / navigation bars (edge-to-edge is forced on Android 15)
-        web.setOnApplyWindowInsetsListener((v, insets) -> {
+        // Always keep content clear of the status bar / notch / nav bar AND the keyboard. WebView padding doesn't
+        // move its content, so the insets go on a container around it (edge-to-edge is forced on Android 15+).
+        android.widget.FrameLayout box = new android.widget.FrameLayout(this);
+        box.setBackgroundColor(Color.parseColor("#0b0b16"));
+        box.addView(web, new android.widget.FrameLayout.LayoutParams(-1, -1));
+        box.setOnApplyWindowInsetsListener((v, insets) -> {
             int top, bottom, l, r;
             if (Build.VERSION.SDK_INT >= 30) {
-                android.graphics.Insets i = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
-                top = i.top; bottom = i.bottom; l = i.left; r = i.right;
+                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                android.graphics.Insets ime = insets.getInsets(WindowInsets.Type.ime());
+                top = bars.top; l = bars.left; r = bars.right; bottom = Math.max(bars.bottom, ime.bottom);
             } else {
                 top = insets.getSystemWindowInsetTop(); bottom = insets.getSystemWindowInsetBottom();
                 l = insets.getSystemWindowInsetLeft(); r = insets.getSystemWindowInsetRight();
             }
             v.setPadding(l, top, r, bottom);
-            return insets;
+            return Build.VERSION.SDK_INT >= 30 ? WindowInsets.CONSUMED : insets.consumeSystemWindowInsets();
         });
-        setContentView(web);
+        setContentView(box);
         web.loadUrl("file:///android_asset/www/index.html");
         live = new WeakReference<>(this);
 

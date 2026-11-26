@@ -42,6 +42,24 @@ public class WidgetTest {
         Calendar c = Calendar.getInstance(); c.clear(); c.set(year, month, day, h, m); return c.getTimeInMillis();
     }
 
+    @Test public void supplyHistoryAndSkip() throws Exception {
+        long mon8pm = at(2026, Calendar.NOVEMBER, 30, 20, 0);
+        JSONObject m = testo(mon8pm, mon8pm - 4 * Sched.DAY).put("supply", new JSONObject().put("left", 2.0).put("size", 10));
+        Sched.give(m, mon8pm + 10 * Sched.MIN);
+        assertEquals(1.5, m.getJSONObject("supply").getDouble("left"), 1e-9);
+        assertEquals(1, Supply.streak(m));
+        Supply s = Supply.of(m);
+        assertEquals(3, s.doses);
+        assertTrue(s.low);                       // 3 doses ≈ 10 days < 14
+        long beforeSkip = m.getLong("nextAt");
+        Sched.skip(m, beforeSkip - Sched.HOUR);
+        assertTrue(m.getLong("nextAt") > beforeSkip);
+        assertEquals(1.5, m.getJSONObject("supply").getDouble("left"), 1e-9);   // skipping uses no supply
+        assertEquals(1, Supply.streak(m));       // a deliberate skip doesn't break the streak
+        Sched.give(m, m.getLong("nextAt") + 9 * Sched.HOUR);                    // 9h late
+        assertEquals(0, Supply.streak(m));
+    }
+
     @Test public void twiceWeeklyScheduleAndSiteRotation() throws Exception {
         long mon8pm = at(2026, Calendar.NOVEMBER, 30, 20, 0), thu8pm = at(2026, Calendar.DECEMBER, 3, 20, 0);
         JSONObject m = testo(mon8pm, mon8pm - 4 * Sched.DAY);
@@ -75,8 +93,13 @@ public class WidgetTest {
     @Test public void rendersWidgets() throws Exception {
         Context c = ApplicationProvider.getApplicationContext();
         long now = System.currentTimeMillis();
-        JSONObject testo = look(testo(now + Sched.DAY + 19 * Sched.HOUR + 4 * Sched.MIN, now - 40 * Sched.HOUR), "t", "Testosterone", "syringe", "#facc15", "#101428", "tank").put("amount", 7.5).put("strength", "");
+        JSONObject testo = look(testo(now + Sched.DAY + 19 * Sched.HOUR + 4 * Sched.MIN, now - 40 * Sched.HOUR), "t", "Testosterone", "syringe", "#facc15", "#101428", "tank").put("amount", 0.5).put("strength", "");
+        testo.put("supply", new JSONObject().put("left", 6.5).put("size", 10).put("lowDays", 14));
+        JSONArray h = new JSONArray();
+        for (int i = 0; i < 12; i++) h.put(new JSONObject().put("t", now - (i + 1) * 3 * Sched.DAY).put("due", now - (i + 1) * 3 * Sched.DAY + Sched.HOUR));
+        testo.put("hist", h);
         JSONObject late = look(testo(now - 7 * Sched.MIN, now - 84 * Sched.HOUR), "t2", "Testosterone", "syringe", "#ff9f1c", "#101428", "ring");
+        late.put("supply", new JSONObject().put("left", 1.0).put("size", 10).put("lowDays", 14));
         JSONObject text = look(testo(now + 5 * Sched.HOUR, now - 19 * Sched.HOUR), "v", "Vitamin D", "capsule", "#f472b6", "#1e0f2e", "text").put("sites", new JSONArray());
         JSONObject heart = look(testo(now + 20 * Sched.MIN, now - 7 * Sched.HOUR), "a", "Amoxicillin", "bottle", "#a3e635", "#0c1f17", "heart").put("sites", new JSONArray());
         JSONObject pen = look(testo(now + 3 * Sched.DAY, now - 3 * Sched.DAY), "i", "Insulin long-acting pen injection", "pen", "#00e5ff", "#0a1a2f", "hop");

@@ -47,6 +47,15 @@ final class Sprites {
 
     static int argb(int[] c) { return 0xFF000000 | Pixel.pack(c); }
 
+    /** Animation frame drawn at exactly sizePx (nearest-neighbour, so it stays crisp and fills its box with no gap). */
+    static Bitmap frameExact(JSONObject m, float frac, int state, int k, int sizePx) {
+        int[] px = Pixel.render(style(m), icon(m), accent(m), hex(bg(m)), frac, state, k);
+        int G = Pixel.G, S = Math.max(G, Math.min(sizePx, G * 6));
+        int[] big = new int[S * S];
+        for (int y = 0; y < S; y++) { int sy = y * G / S; for (int x = 0; x < S; x++) big[y * S + x] = 0xFF000000 | px[sy * G + x * G / S]; }
+        return Bitmap.createBitmap(big, S, S, Bitmap.Config.RGB_565);
+    }
+
     /** One animation frame (0..3) of the med's chosen style, scaled up with no smoothing. Opaque RGB_565 keeps widget updates small. */
     static Bitmap frame(JSONObject m, float frac, int state, int k, int scale) {
         int[] px = Pixel.render(style(m), icon(m), accent(m), hex(bg(m)), frac, state, k);

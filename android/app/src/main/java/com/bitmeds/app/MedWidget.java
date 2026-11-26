@@ -85,8 +85,8 @@ public class MedWidget extends AppWidgetProvider {
         v.setImageViewBitmap(R.id.bg, WidgetArt.single(c, m, wDp, hDp, armed, now, g));
 
         if (g.art != null) {
-            int state = MedListWidget.stateOf(m, now), scale = Math.max(1, g.art.width() / Pixel.G);
-            for (int k = 0; k < 4; k++) v.setImageViewBitmap(FRAMES[k], Sprites.frame(m, Sched.frac(m, now), state, k, scale));
+            int state = MedListWidget.stateOf(m, now);
+            for (int k = 0; k < 4; k++) v.setImageViewBitmap(FRAMES[k], Sprites.frameExact(m, Sched.frac(m, now), state, k, g.art.width()));
             place(v, R.id.flip, g.art, g.d);
             v.setViewVisibility(R.id.flip, View.VISIBLE);
         } else v.setViewVisibility(R.id.flip, View.GONE);

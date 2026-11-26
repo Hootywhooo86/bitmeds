@@ -45,7 +45,7 @@ android {
 // The app shows the same web app as the site: copy it in from ../app at build time.
 tasks.register('copyWebApp', Copy) {
     from(rootProject.file('../app')) {
-        include 'index.html', 'pixelart.js', 'fonts/**', 'icon-192.png', 'manifest.json'
+        include 'index.html', 'pixelart.js', 'extras.js', 'sync.js', 'fonts/**', 'icon-192.png', 'manifest.json'
     }
     into layout.buildDirectory.dir('generated/webassets/www')
 }

@@ -47,7 +47,16 @@ final class Sched {
             log.put(now);
             if (old != null) for (int i = 0; i < old.length() && log.length() < 60; i++) log.put(old.optLong(i));
             m.put("log", log);
+            // history entry (when given vs when it was due, which site) — newest first, kept to 300
+            JSONObject e = new JSONObject().put("t", now).put("due", m.optLong("nextAt"));
             JSONArray sites = m.optJSONArray("sites");
+            if (sites != null && sites.length() > 0) e.put("site", sites.optString(Math.floorMod(m.optInt("siteIdx", 0), sites.length())));
+            JSONArray oh = m.optJSONArray("hist"), hist = new JSONArray().put(e);
+            if (oh != null) for (int i = 0; i < oh.length() && hist.length() < 300; i++) hist.put(oh.opt(i));
+            m.put("hist", hist);
+            JSONObject sup = m.optJSONObject("supply");
+            if (sup != null && sup.has("left")) sup.put("left", Math.max(0, Math.round((sup.optDouble("left") - m.optDouble("amount", 1)) * 1000) / 1000.0));
+            m.put("u", now);
             if (sites != null && sites.length() > 0) {
                 int idx = Math.floorMod(m.optInt("siteIdx", 0), sites.length());
                 m.put("lastSite", sites.optString(idx));
@@ -56,6 +65,20 @@ final class Sched {
             m.put("nextAt", nextAfterGiven(m, now));
             m.put("periodStart", now);
             m.put("snoozeAt", JSONObject.NULL);
+        } catch (JSONException ignored) { }
+    }
+
+    /** Skip this dose on purpose: logged in history, timer moves on, supply and site rotation unchanged. */
+    static void skip(JSONObject m, long now) {
+        try {
+            JSONObject e = new JSONObject().put("t", now).put("due", m.optLong("nextAt")).put("skip", true);
+            JSONArray oh = m.optJSONArray("hist"), hist = new JSONArray().put(e);
+            if (oh != null) for (int i = 0; i < oh.length() && hist.length() < 300; i++) hist.put(oh.opt(i));
+            m.put("hist", hist);
+            m.put("nextAt", nextAfterGiven(m, now));
+            m.put("periodStart", now);
+            m.put("snoozeAt", JSONObject.NULL);
+            m.put("u", now);
         } catch (JSONException ignored) { }
     }
 

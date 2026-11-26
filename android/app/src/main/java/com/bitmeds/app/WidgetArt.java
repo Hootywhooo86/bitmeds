@@ -55,71 +55,89 @@ final class WidgetArt {
         drawPanel(cv, new Rect(sh, sh, W, H), BLACK, BLACK, d, 0);
         drawPanel(cv, panel, Sprites.argb(L.bg), L.border, d, m.optString("id").hashCode());
 
-        int pad = dp(d, 10);
+        int pad = dp(d, 8);
         Rect in = new Rect(panel.left + pad, panel.top + pad, panel.right - pad, panel.bottom - pad);
-        int btnH = clamp(Math.round(in.height() * 0.24f), dp(d, 30), dp(d, 48));
+        int btnH = clamp(Math.round(in.height() * 0.27f), dp(d, 36), dp(d, 64));
         Rect btn = new Rect(in.left, in.bottom - btnH, in.right, in.bottom);
-        int barH = dp(d, 5), gap = dp(d, 7);
+        int gap = dp(d, 6);
+        int barH = clamp(Math.round(in.height() * 0.05f), dp(d, 6), dp(d, 10));
         Rect bar = new Rect(in.left, btn.top - gap - barH, in.right, btn.top - gap);
         Rect body = new Rect(in.left, in.top, in.right, bar.top - gap);
+        String btnLabel = armed ? "TAP AGAIN TO LOG" : body.width() < dp(d, 230) ? "GAVE IT" : "GAVE IT · RESET";
 
-        boolean narrow = body.width() < dp(d, 230);
-        if (narrow) {
-            // square / narrow widget: stack the animation over a centred name + timer
+        if (body.width() < dp(d, 230)) {
+            // square / narrow: big animation on top, name + timer under it, all centred
             int ch = body.height();
-            Rect rTime = new Rect(body.left, body.bottom - Math.round(ch * 0.21f), body.right, body.bottom);
-            Rect rName = new Rect(body.left, rTime.top - Math.round(ch * 0.13f), body.right, rTime.top - Math.round(ch * 0.01f));
+            Rect rTime = new Rect(body.left, body.bottom - Math.round(ch * 0.22f), body.right, body.bottom);
+            Rect rName = new Rect(body.left, rTime.top - Math.round(ch * 0.14f), body.right, rTime.top);
             if (!L.textOnly) {
-                int side = Math.min(rName.top - body.top - dp(d, 4), body.width());
+                int side = Math.min(rName.top - body.top - dp(d, 2), body.width());
                 Rect box = new Rect(body.centerX() - side / 2, body.top, body.centerX() - side / 2 + side, body.top + side);
-                fill(cv, box, L.boxLine);
-                Rect art = inset(box, dp(d, 3));
-                fill(cv, art, Sprites.argb(L.bgSnap));
-                g.art = snap52(art);
+                g.art = artBox(cv, box, L, d);
             } else {
                 g.art = null;
-                Rect rLabel = new Rect(body.left, body.top, body.right, body.top + Math.round(ch * 0.14f));
-                text(cv, c, L.label, rLabel, L.accentLight, 9, false, false, true);
-                rName = new Rect(body.left, rLabel.bottom + Math.round(ch * 0.06f), body.right, rLabel.bottom + Math.round(ch * 0.3f));
-                rTime = new Rect(body.left, rName.bottom + Math.round(ch * 0.04f), body.right, body.bottom - Math.round(ch * 0.16f));
-                text(cv, c, L.info, new Rect(body.left, body.bottom - Math.round(ch * 0.13f), body.right, body.bottom), L.muted, 9, false, false, true);
+                int y = body.top;
+                Rect rLabel = new Rect(body.left, y, body.right, y + Math.round(ch * 0.12f));
+                text(cv, c, L.label, rLabel, L.accentLight, 10, false, false, true);
+                rName = new Rect(body.left, rLabel.bottom + Math.round(ch * 0.04f), body.right, rLabel.bottom + Math.round(ch * 0.26f));
+                rTime = new Rect(body.left, rName.bottom + Math.round(ch * 0.03f), body.right, body.bottom - Math.round(ch * 0.22f));
+                chips(cv, c, new Rect(body.left, body.bottom - Math.round(ch * 0.19f), body.right, body.bottom), L, d, true);
             }
-            text(cv, c, L.name, rName, INK, 20, true, false, true);
-            text(cv, c, L.time, rTime, L.tone, 64, true, true, true);
-            bar(cv, bar, L, d);
-            button(cv, c, btn, L, armed ? "AGAIN?" : "↺ GAVE IT", d);
-            g.give = btn;
-            return bmp;
+            text(cv, c, L.name, rName, INK, 22, true, false, true);
+            text(cv, c, L.time, rTime, L.tone, 72, true, true, true);
+        } else {
+            Rect col = new Rect(body);
+            if (!L.textOnly) {
+                // the animation gets the full height of the body: no gaps above or below it
+                int side = Math.min(body.height(), Math.round(body.width() * 0.44f));
+                Rect box = new Rect(body.left, body.top, body.left + side, body.top + side);
+                g.art = artBox(cv, box, L, d);
+                col = new Rect(box.right + dp(d, 9), body.top, body.right, body.bottom);
+            } else g.art = null;
+            int ch = col.height();
+            int y = col.top;
+            Rect rLabel = new Rect(col.left, y, col.right, y += Math.round(ch * 0.12f));
+            Rect rName = new Rect(col.left, y += Math.round(ch * 0.02f), col.right, y += Math.round(ch * 0.23f));
+            Rect rTime = new Rect(col.left, y += Math.round(ch * 0.02f), col.right, y += Math.round(ch * 0.33f));
+            Rect rInfo = new Rect(col.left, y += Math.round(ch * 0.02f), col.right, y += Math.round(ch * 0.11f));
+            Rect rChips = new Rect(col.left, y + Math.round(ch * 0.03f), col.right, col.bottom);
+            text(cv, c, L.label, rLabel, L.accentLight, 10, false, false);
+            text(cv, c, L.name, rName, INK, 24, true, false);
+            text(cv, c, L.time, rTime, L.tone, 72, true, true);
+            text(cv, c, L.info, rInfo, L.muted, 10, false, false);
+            chips(cv, c, rChips, L, d, false);
         }
-
-        Rect col = new Rect(body);
-        if (!L.textOnly && body.width() > dp(d, 120)) {
-            int side = Math.min(body.height(), Math.round(body.width() * 0.4f));
-            Rect box = new Rect(body.left, body.top + (body.height() - side) / 2, body.left + side, body.top + (body.height() - side) / 2 + side);
-            int frame = dp(d, 3);
-            fill(cv, box, L.boxLine);
-            Rect art = inset(box, frame);
-            fill(cv, art, Sprites.argb(L.bgSnap));
-            g.art = snap52(art);
-            col = new Rect(box.right + dp(d, 10), body.top, body.right, body.bottom);
-        } else g.art = null;
-
-        // text column: label / name / timer / info, each auto-fitted to its share of the height
-        int ch = col.height();
-        Rect rLabel = new Rect(col.left, col.top, col.right, col.top + Math.round(ch * 0.13f));
-        Rect rName = new Rect(col.left, rLabel.bottom + Math.round(ch * 0.04f), col.right, rLabel.bottom + Math.round(ch * 0.30f));
-        Rect rTime = new Rect(col.left, rName.bottom + Math.round(ch * 0.05f), col.right, col.bottom - Math.round(ch * 0.19f));
-        Rect rInfo = new Rect(col.left, col.bottom - Math.round(ch * 0.14f), col.right, col.bottom);
-
-        text(cv, c, L.label, rLabel, L.accentLight, 9, false, false);
-        text(cv, c, L.name, rName, INK, 20, true, false);
-        text(cv, c, L.time, rTime, L.tone, 64, true, true);
-        text(cv, c, L.info, rInfo, L.muted, 9, false, false);
-
         bar(cv, bar, L, d);
-        button(cv, c, btn, L, armed ? "TAP AGAIN TO LOG" : "↺ GAVE IT · RESET", d);
+        button(cv, c, btn, L, btnLabel, d);
         g.give = btn;
         return bmp;
+    }
+
+    /** Framed box for the animation; returns the exact area the animation frames fill (no inner gap). */
+    private static Rect artBox(Canvas cv, Rect box, Look L, float d) {
+        fill(cv, box, L.boxLine);
+        int f = dp(d, 3);
+        Rect hi = new Rect(box.left, box.top, box.right, box.top + Math.max(1, dp(d, 1)));
+        fill(cv, hi, Sprites.argb(L.acc[1]));
+        Rect art = inset(box, f);
+        fill(cv, art, Sprites.argb(L.bgSnap));
+        return art;
+    }
+
+    /** Little pixel pills that turn spare space into useful info: supply left, streak, next site / schedule. */
+    private static void chips(Canvas cv, Context c, Rect r, Look L, float d, boolean center) {
+        if (r.height() < dp(d, 10) || L.chips.isEmpty()) return;
+        int gap = dp(d, 5), n = Math.min(L.chips.size(), r.width() < dp(d, 170) ? 2 : 3);
+        int w = (r.width() - gap * (n - 1)) / n;
+        for (int i = 0; i < n; i++) {
+            String[] chip = L.chips.get(i);
+            Rect b = new Rect(r.left + i * (w + gap), r.top, r.left + i * (w + gap) + w, r.bottom);
+            int col = chip[1].equals("warn") ? RED : chip[1].equals("hot") ? 0xFFFF9F1C : Sprites.argb(L.acc[0]);
+            fill(cv, b, Sprites.argb(Pixel.mix(Pixel.unpack(col & 0xFFFFFF), new int[]{0, 0, 0}, 0.55)));
+            fill(cv, new Rect(b.left, b.top, b.right, b.top + Math.max(1, dp(d, 2))), col);
+            fill(cv, new Rect(b.left, b.top, b.left + Math.max(1, dp(d, 2)), b.bottom), col);
+            text(cv, c, chip[0], inset(b, dp(d, 4)), INK, 12, true, false, true);
+        }
     }
 
     // ------------------------------------------------------------------ several meds
@@ -173,7 +191,7 @@ final class WidgetArt {
                 int side = Math.min(content.height(), Math.round(content.width() * 0.22f));
                 Rect art = new Rect(content.left, content.centerY() - side / 2, content.left + side, content.centerY() - side / 2 + side);
                 fill(cv, art, Sprites.argb(L.bgSnap));
-                g.rowArt[i] = snap52(art);
+                g.rowArt[i] = art;
                 txt.left = art.right + dp(d, 6);
             }
             int th = txt.height();
@@ -194,6 +212,7 @@ final class WidgetArt {
         boolean due, soon, textOnly;
         float frac;
         String name, label, time, info;
+        java.util.List<String[]> chips = new java.util.ArrayList<>();
 
         Look(Context c, JSONObject m, long now, boolean armed) {
             long next = m.optLong("nextAt"), left = next - now;
@@ -215,6 +234,13 @@ final class WidgetArt {
             info = "";
             if (m.has("nextAt")) info = (due ? "WAS DUE " : "DUE ") + Sched.when(c, next).toUpperCase(Locale.getDefault());
             if (!site.isEmpty()) info += " · " + MedWidget.shortSite(site);
+            // chips: supply left, on-time streak, next site / schedule
+            Supply sup = Supply.of(m);
+            if (sup != null) chips.add(new String[]{sup.doses + (sup.doses == 1 ? " DOSE LEFT" : " DOSES LEFT"), sup.low ? "warn" : "ok"});
+            int streak = Supply.streak(m);
+            if (streak > 0) chips.add(new String[]{"STREAK " + streak, "hot"});
+            if (!site.isEmpty()) chips.add(new String[]{"SITE " + MedWidget.shortSite(site), "ok"});
+            if (chips.size() < 2) chips.add(new String[]{Supply.schedLabel(m), "ok"});
         }
     }
 
@@ -280,19 +306,50 @@ final class WidgetArt {
         }
     }
 
+    /** Chunky 3D pixel button: dark lip, bevel, shine stripe, pixel check icon, drop-shadowed label. */
     private static void button(Canvas cv, Context c, Rect r, Look L, String label, float d) {
-        int[] face = label.startsWith("TAP") || label.startsWith("AGAIN") ? new int[]{250, 204, 21} : L.due ? new int[]{255, 93, 93} : L.acc[0];
-        Paint p = new Paint();
-        int lip = Math.max(2, dp(d, 4));
-        p.setColor(Sprites.argb(Pixel.shades(face)[2]));
-        cv.drawRect(r, p);
-        p.setColor(Sprites.argb(face));
-        cv.drawRect(r.left, r.top, r.right, r.bottom - lip, p);
-        p.setColor(Sprites.argb(Pixel.shades(face)[1]));
-        cv.drawRect(r.left, r.top, r.right, r.top + Math.max(1, dp(d, 2)), p);
+        boolean confirm = label.startsWith("TAP") || label.startsWith("AGAIN");
+        int[] face = confirm ? new int[]{250, 204, 21} : L.due ? new int[]{255, 93, 93} : L.acc[0];
+        int[][] sh = Pixel.shades(face);
+        int u = Math.max(1, dp(d, 1)), lip = Math.max(3, dp(d, 5));
+        fill(cv, r, 0xFF000000);                                                    // outline
+        Rect body = new Rect(r.left + u, r.top + u, r.right - u, r.bottom - u);
+        fill(cv, body, Sprites.argb(sh[2]));                                         // lip
+        Rect top = new Rect(body.left, body.top, body.right, body.bottom - lip);
+        fill(cv, top, Sprites.argb(face));
+        fill(cv, new Rect(top.left, top.top, top.right, top.top + 2 * u), Sprites.argb(sh[1]));     // bevel light
+        fill(cv, new Rect(top.left, top.top, top.left + 2 * u, top.bottom), Sprites.argb(sh[1]));
+        fill(cv, new Rect(top.left, top.bottom - u, top.right, top.bottom), Sprites.argb(Pixel.mix(face, new int[]{0, 0, 0}, 0.25)));
+        // shine: two little diagonal pixel blocks near the left
+        int sx = top.left + 6 * u, sy = top.top + 4 * u, b = 2 * u;
+        fill(cv, new Rect(sx, sy, sx + b, sy + b), 0xFFFFFFFF);
+        fill(cv, new Rect(sx + b, sy - b + b, sx + 2 * b, sy + b), 0xCCFFFFFF);
         int ink = MedWidget.lum(face) > 0.55 ? 0xFF0B0B16 : 0xFFFFFFFF;
-        Rect t = new Rect(r.left + dp(d, 6), r.top + dp(d, 4), r.right - dp(d, 6), r.bottom - lip - dp(d, 4));
-        text(cv, c, label, t, ink, 14, false, false, true);
+        Rect t = new Rect(top.left + dp(d, 8), top.top + dp(d, 3), top.right - dp(d, 8), top.bottom - dp(d, 3));
+        // pixel check mark icon + label, centred together
+        Paint p = new Paint(); p.setAntiAlias(false); p.setTypeface(font(c));
+        int size = fitSize(p, label, t.width() - t.height(), Math.min(t.height(), Math.round(16 * d)));
+        p.setTextSize(size);
+        float tw = p.measureText(label), icon = size * 1.2f, total = icon + size * 0.6f + tw;
+        float x = t.left + (t.width() - total) / 2f;
+        int q = Math.max(1, size / 8);
+        float iy = t.centerY() - 4 * q;
+        int[][] CHECK = {{6,0},{7,0},{5,1},{6,1},{4,2},{5,2},{0,3},{1,3},{3,3},{4,3},{1,4},{2,4},{3,4},{2,5}};
+        Paint ip = new Paint(); ip.setColor(0xFF000000);
+        for (int[] px : CHECK) cv.drawRect(x + px[0] * q + q, iy + px[1] * q + q, x + px[0] * q + 2 * q, iy + px[1] * q + 2 * q, ip);
+        ip.setColor(ink);
+        for (int[] px : CHECK) cv.drawRect(x + px[0] * q, iy + px[1] * q, x + px[0] * q + q, iy + px[1] * q + q, ip);
+        Rect bb = new Rect(); p.getTextBounds("M", 0, 1, bb);
+        float ty = Math.round(t.top + (t.height() + bb.height()) / 2f), tx = x + icon + size * 0.6f;
+        p.setColor(ink == 0xFFFFFFFF ? 0xFF000000 : Sprites.argb(sh[1]));
+        cv.drawText(label, tx + q, ty + q, p);
+        p.setColor(ink);
+        cv.drawText(label, tx, ty, p);
+    }
+
+    private static int fitSize(Paint p, String s, int maxW, int maxH) {
+        for (int sz = (maxH / 8) * 8; sz >= 8; sz -= 8) { p.setTextSize(sz); if (p.measureText(s) <= maxW) return sz; }
+        return 8;
     }
 
     private static int text(Canvas cv, Context c, String s, Rect r, int color, int maxDp, boolean shadow, boolean glow) {
